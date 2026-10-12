@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+Disallow: /login
+Disallow: /registro
+Disallow: /barberos/
+Disallow: /admin/
+Disallow: /cita/
+Disallow: /reservar/
