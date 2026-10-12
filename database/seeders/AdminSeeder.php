@@ -13,7 +13,7 @@ class AdminSeeder extends Seeder
 
         $admin->forceFill([
             'name' => 'José Pablo',
-            'password' => '3',
+            'password' => env('ADMIN_PASSWORD'),
             'role' => 'admin',
             'status' => 'aceptado',
             'is_active' => true,
