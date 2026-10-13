@@ -4,38 +4,55 @@
 
 @push('styles')
 <style>
-    .encabezado {
-        display: flex;
-        flex-wrap: wrap;
-        align-items: flex-end;
-        justify-content: space-between;
-        gap: 14px;
-        margin-bottom: 18px;
-    }
-    .encabezado p { margin: 0; color: var(--gris-4); max-width: 60ch; }
+    /* =========================================================
+       Citas: mobile-first
+       Base = celular. Los @media (min-width) ensanchan hacia arriba.
+       ========================================================= */
 
+    /* ---------- Encabezado ---------- */
+    .encabezado {
+        display: grid;
+        gap: 14px;
+        margin-bottom: 16px;
+    }
+    .encabezado h1 { margin: 0 0 6px; }
+    .encabezado p { margin: 0; color: var(--gris-4); max-width: 60ch; }
+    .encabezado .btn { width: 100%; }
+
+    /* ---------- Botones (objetivo táctil ~46px) ---------- */
     .btn {
         display: inline-flex;
         align-items: center;
         justify-content: center;
         gap: 8px;
-        padding: 11px 20px;
+        min-height: 46px;
+        padding: 10px 20px;
         border: 1px solid var(--negro);
-        border-radius: 8px;
+        border-radius: 10px;
         background: var(--negro);
         color: var(--blanco);
         font: inherit;
         font-weight: 600;
+        line-height: 1.2;
         cursor: pointer;
+        touch-action: manipulation;
+        -webkit-tap-highlight-color: transparent;
         transition: background 400ms ease, color 400ms ease, border-color 400ms ease, opacity 400ms ease;
     }
+    .btn svg { width: 18px; height: 18px; flex-shrink: 0; }
     .btn:hover:not(:disabled) { background: var(--gris-4); border-color: var(--gris-4); }
     .btn:disabled { opacity: .4; cursor: not-allowed; }
     .btn-claro { background: var(--blanco); color: var(--negro); border-color: var(--gris-2); }
     .btn-claro:hover:not(:disabled) { background: var(--gris-1); color: var(--negro); border-color: var(--gris-3); }
-    .btn-sm { padding: 8px 14px; font-size: .9rem; }
+    .btn-sm { min-height: 44px; padding: 8px 12px; font-size: .92rem; }
 
-    .resumen { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 22px; }
+    .btn:focus-visible,
+    .modal-x:focus-visible,
+    .chip:focus-visible,
+    .cita-tel:focus-visible { outline: 2px solid var(--negro); outline-offset: 2px; }
+
+    /* ---------- Resumen ---------- */
+    .resumen { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; }
     .dato {
         display: inline-flex;
         align-items: center;
@@ -50,55 +67,85 @@
     .dato strong { font-family: 'Barlow Condensed', sans-serif; font-size: 1.25rem; line-height: 1; }
 
     /* ---------- Grupos y tarjetas ---------- */
-    .grupo { margin-bottom: 26px; }
-    .grupo-titulo { display: flex; align-items: center; gap: 10px; margin: 0 0 10px; font-size: 1.5rem; }
-    .grupo-nota { font-family: 'Manrope', sans-serif; font-size: .82rem; font-weight: 500; color: var(--gris-4); }
+    .grupo { margin-bottom: 24px; }
+    .grupo-titulo {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: baseline;
+        gap: 2px 10px;
+        margin: 0 0 10px;
+        font-size: 1.5rem;
+    }
+    .grupo-nota {
+        flex: 1 1 100%;
+        font-family: 'Manrope', sans-serif;
+        font-size: .82rem;
+        font-weight: 500;
+        line-height: 1.4;
+        color: var(--gris-4);
+    }
 
     .lista { display: grid; gap: 12px; }
 
     .cita {
         display: grid;
-        grid-template-columns: 1fr;
-        gap: 14px;
-        padding: 16px 18px;
+        grid-template-columns: minmax(0, 1fr);
+        gap: 12px;
+        padding: 14px;
         background: var(--blanco);
         border: 1px solid var(--gris-2);
-        border-radius: 12px;
+        border-radius: 14px;
     }
-    .cita.por-cerrar { border: 2px solid var(--negro); }
+    .cita.por-cerrar { border: 2px solid var(--negro); padding: 13px; }
 
-    .cita-hora { font-family: 'Barlow Condensed', sans-serif; font-size: 1.9rem; font-weight: 600; line-height: 1; }
+    /* Móvil: hora grande y "hasta" en la misma línea */
+    .cita-hora {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: baseline;
+        gap: 2px 10px;
+        font-family: 'Barlow Condensed', sans-serif;
+        font-size: 2rem;
+        font-weight: 600;
+        line-height: 1;
+    }
     .cita-hora small {
-        display: block;
-        margin-top: 4px;
         font-family: 'Manrope', sans-serif;
-        font-size: .8rem;
+        font-size: .82rem;
         font-weight: 600;
         color: var(--gris-4);
     }
 
+    .cita-info { min-width: 0; }
     .cita-info h3 { margin: 0 0 2px; font-size: 1.4rem; overflow-wrap: anywhere; }
-    .cita-info p { margin: 0; font-size: .92rem; color: var(--gris-4); }
+    .cita-info p { margin: 0; font-size: .92rem; color: var(--gris-4); overflow-wrap: anywhere; }
+
+    /* Enlace de WhatsApp con área táctil de 44px */
     .cita-tel {
         display: inline-flex;
         align-items: center;
-        gap: 6px;
-        margin-top: 6px;
-        font-size: .9rem;
+        gap: 8px;
+        min-height: 44px;
+        margin-top: 2px;
+        font-size: .95rem;
         font-weight: 600;
         text-decoration: underline;
         text-underline-offset: 3px;
+        -webkit-tap-highlight-color: transparent;
     }
-    .cita-tel [data-lucide] { width: 16px; height: 16px; }
+    .cita-tel svg { width: 18px; height: 18px; }
     .cita-tel:hover { color: var(--gris-4); }
 
-    .cita-acciones { display: flex; flex-wrap: wrap; gap: 8px; }
-    .cita-acciones form { margin: 0; }
-
-    @media (min-width: 640px) {
-        .cita { grid-template-columns: 130px 1fr; }
-        .cita-acciones { grid-column: 1 / -1; padding-top: 12px; border-top: 1px solid var(--gris-1); }
+    /* Móvil: acciones en rejilla de 2 columnas (2 o 4 botones) */
+    .cita-acciones {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+        padding-top: 12px;
+        border-top: 1px solid var(--gris-1);
     }
+    .cita-acciones form { margin: 0; display: flex; }
+    .cita-acciones .btn { width: 100%; }
 
     .etiqueta {
         display: inline-block;
@@ -116,16 +163,17 @@
     }
 
     .vacio {
-        padding: 40px 20px;
+        padding: 36px 18px;
         text-align: center;
         background: var(--blanco);
-        border-radius: 12px;
+        border-radius: 14px;
         color: var(--gris-4);
     }
-    .vacio [data-lucide] { width: 36px; height: 36px; color: var(--gris-3); margin-bottom: 8px; }
+    .vacio [data-lucide],
+    .vacio svg { width: 36px; height: 36px; color: var(--gris-3); margin-bottom: 8px; }
     .vacio p { margin: 0; }
 
-    /* ---------- Modal ---------- */
+    /* ---------- Modales (hoja inferior en móvil) ---------- */
     .modal {
         position: fixed;
         inset: 0;
@@ -136,6 +184,7 @@
         background: rgba(0, 0, 0, .6);
         opacity: 0;
         visibility: hidden;
+        overscroll-behavior: contain;
         transition: opacity 400ms ease, visibility 400ms ease;
     }
     .modal.abierto { opacity: 1; visibility: visible; }
@@ -144,55 +193,93 @@
         width: 100%;
         max-width: 520px;
         max-height: 92vh;
+        max-height: 92dvh;
         display: flex;
         flex-direction: column;
         background: var(--blanco);
-        border-radius: 16px 16px 0 0;
+        border-radius: 18px 18px 0 0;
+        outline: none;
         transform: translateY(24px);
         transition: transform 450ms cubic-bezier(.22, .61, .36, 1);
     }
     .modal.abierto .modal-caja { transform: none; }
 
-    @media (min-width: 640px) {
-        .modal { align-items: center; padding: 24px; }
-        .modal-caja { border-radius: 16px; }
-    }
-
     .modal-cab {
+        position: relative;
         display: flex;
         align-items: center;
         justify-content: space-between;
-        padding: 18px 22px;
+        padding: 20px 16px 12px 18px;
         border-bottom: 1px solid var(--gris-1);
     }
+
+    /* Agarradera visual de la hoja */
+    .modal-cab::before {
+        content: '';
+        position: absolute;
+        top: 8px;
+        left: 50%;
+        width: 40px;
+        height: 4px;
+        margin-left: -20px;
+        border-radius: 4px;
+        background: var(--gris-2);
+    }
+
     .modal-cab h2 { margin: 0; }
+
     .modal-x {
-        width: 38px;
-        height: 38px;
+        width: 44px;
+        height: 44px;
         display: inline-flex;
         align-items: center;
         justify-content: center;
         background: transparent;
         border: 0;
-        border-radius: 8px;
+        border-radius: 10px;
         color: var(--gris-4);
         cursor: pointer;
+        touch-action: manipulation;
+        -webkit-tap-highlight-color: transparent;
         transition: background 400ms ease;
     }
     .modal-x:hover { background: var(--gris-1); }
 
-    .modal-form { display: flex; flex-direction: column; min-height: 0; }
-    .modal-cuerpo { padding: 20px 22px; overflow-y: auto; display: grid; gap: 16px; }
-    .modal-pie {
+    .modal-form {
         display: flex;
-        justify-content: flex-end;
-        gap: 10px;
-        padding: 16px 22px;
-        border-top: 1px solid var(--gris-1);
+        flex-direction: column;
+        flex: 1 1 auto;
+        min-height: 0;
     }
 
+    .modal-cuerpo {
+        flex: 1 1 auto;
+        min-height: 0;
+        display: grid;
+        align-content: start;
+        gap: 16px;
+        padding: 18px;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        overscroll-behavior: contain;
+    }
+
+    /* Modal sin pie: respeta la barra de gestos al final de la lista */
+    .modal-cuerpo.sin-pie { padding-bottom: calc(18px + env(safe-area-inset-bottom, 0px)); }
+
+    /* Pie fijo, respeta la barra de gestos de iPhone/Android */
+    .modal-pie {
+        display: flex;
+        gap: 10px;
+        padding: 12px 18px;
+        padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+        border-top: 1px solid var(--gris-1);
+        background: var(--blanco);
+    }
+    .modal-pie .btn { flex: 1 1 0; }
+
     .errores {
-        padding: 12px 16px;
+        padding: 12px 14px;
         border: 1px solid var(--gris-4);
         border-left-width: 4px;
         border-radius: 8px;
@@ -200,34 +287,64 @@
         font-size: .92rem;
     }
     .errores ul { margin: 0; padding-left: 18px; }
+    .errores li { overflow-wrap: anywhere; }
 
-    .info-cita { margin: 0; padding: 12px 14px; background: var(--gris-1); border-radius: 8px; font-size: .92rem; }
+    .info-cita {
+        margin: 0;
+        padding: 12px 14px;
+        background: var(--gris-1);
+        border-radius: 10px;
+        font-size: .92rem;
+        overflow-wrap: anywhere;
+    }
     .nota { margin: 0; font-size: .85rem; color: var(--gris-4); }
 
+    /* ---------- Campos ---------- */
     .fila-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-    .campo label.etq { display: block; margin-bottom: 4px; font-size: .8rem; font-weight: 600; color: var(--gris-4); }
-    .campo input[type="date"], .campo input[type="time"] {
+    .campo { min-width: 0; }
+    .campo label.etq { display: block; margin-bottom: 5px; font-size: .85rem; font-weight: 600; color: var(--gris-4); }
+
+    /* 16px evita el zoom de iOS; appearance:none corrige el alto raro de date/time en iPhone */
+    .campo input[type="date"],
+    .campo input[type="time"] {
+        display: block;
         width: 100%;
+        min-width: 0;
+        min-height: 48px;
         padding: 10px 12px;
         border: 1px solid var(--gris-2);
-        border-radius: 8px;
+        border-radius: 10px;
         background: var(--blanco);
         font: inherit;
+        font-size: 16px;
         color: var(--negro);
+        text-align: left;
+        -webkit-appearance: none;
+        appearance: none;
     }
     .campo input:focus { outline: 2px solid var(--gris-4); outline-offset: 1px; border-color: var(--gris-4); }
 
-    /* Historial */
+    /* ---------- Historial ---------- */
+    /* Los filtros quedan fijos arriba mientras la lista hace scroll */
+    .modal-filtros {
+        padding: 12px 18px;
+        border-bottom: 1px solid var(--gris-1);
+        background: var(--blanco);
+    }
+
     .chips { display: flex; flex-wrap: wrap; gap: 8px; }
     .chip {
+        min-height: 40px;
         padding: 6px 14px;
         border: 1px solid var(--gris-2);
         border-radius: 999px;
         background: var(--blanco);
         font: inherit;
-        font-size: .88rem;
+        font-size: .9rem;
         font-weight: 600;
         cursor: pointer;
+        touch-action: manipulation;
+        -webkit-tap-highlight-color: transparent;
         transition: background 400ms ease, color 400ms ease, border-color 400ms ease;
     }
     .chip:hover { background: var(--gris-1); border-color: var(--gris-3); }
@@ -241,11 +358,12 @@
         gap: 12px;
         padding: 12px 14px;
         background: var(--gris-1);
-        border-radius: 8px;
+        border-radius: 10px;
     }
     .hist-item[hidden] { display: none; }
+    .hist-item > div { min-width: 0; }
     .hist-item strong { display: block; overflow-wrap: anywhere; }
-    .hist-item span { font-size: .85rem; color: var(--gris-4); }
+    .hist-item span { font-size: .85rem; color: var(--gris-4); overflow-wrap: anywhere; }
     .hist-estado {
         flex-shrink: 0;
         padding: 3px 10px;
@@ -260,6 +378,60 @@
     }
     .hist-vacio { margin: 0; padding: 20px 0; text-align: center; color: var(--gris-4); }
     .hist-vacio[hidden] { display: none; }
+
+    /* Celulares muy angostos: un campo por fila */
+    @media (max-width: 359px) {
+        .fila-2 { grid-template-columns: 1fr; }
+        .cita-acciones { grid-template-columns: 1fr; }
+    }
+
+    /* ---------- Tablet y escritorio ---------- */
+    @media (min-width: 640px) {
+        .encabezado {
+            grid-template-columns: 1fr auto;
+            align-items: end;
+            margin-bottom: 18px;
+        }
+        .encabezado .btn { width: auto; }
+        .resumen { gap: 10px; margin-bottom: 22px; }
+        .grupo { margin-bottom: 26px; }
+        .grupo-nota { flex: 0 1 auto; }
+        .vacio { padding: 40px 20px; }
+
+        .cita {
+            grid-template-columns: 130px minmax(0, 1fr);
+            gap: 14px;
+            padding: 16px 18px;
+        }
+        .cita.por-cerrar { padding: 15px 17px; }
+
+        .cita-hora { display: block; }
+        .cita-hora small { display: block; margin-top: 4px; }
+
+        .cita-tel { min-height: 0; margin-top: 6px; font-size: .9rem; }
+        .cita-tel svg { width: 16px; height: 16px; }
+
+        .cita-acciones {
+            grid-column: 1 / -1;
+            display: flex;
+            flex-wrap: wrap;
+        }
+        .cita-acciones .btn { width: auto; }
+
+        .modal { align-items: center; padding: 24px; }
+        .modal-caja { border-radius: 16px; max-height: min(92vh, 780px); }
+        .modal-cab::before { display: none; }
+        .modal-cab { padding: 18px 16px 14px 22px; }
+        .modal-cuerpo { padding: 20px 22px; }
+        .modal-cuerpo.sin-pie { padding-bottom: 20px; }
+        .modal-filtros { padding: 14px 22px; }
+        .modal-pie { justify-content: flex-end; padding: 16px 22px; }
+        .modal-pie .btn { flex: 0 0 auto; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .modal, .modal-caja, .btn, .modal-x, .chip { transition: none; }
+    }
 </style>
 @endpush
 
@@ -358,7 +530,7 @@
 
     {{-- ---------- Modal editar hora ---------- --}}
     <div class="modal" id="modalHora" role="dialog" aria-modal="true" aria-labelledby="horaTitulo">
-        <div class="modal-caja">
+        <div class="modal-caja" tabindex="-1">
             <div class="modal-cab">
                 <h2 id="horaTitulo">Editar hora</h2>
                 <button type="button" class="modal-x" data-cerrar aria-label="Cerrar">
@@ -412,7 +584,7 @@
 
     {{-- ---------- Modal terminadas / historial ---------- --}}
     <div class="modal" id="modalHistorial" role="dialog" aria-modal="true" aria-labelledby="histTitulo">
-        <div class="modal-caja">
+        <div class="modal-caja" tabindex="-1">
             <div class="modal-cab">
                 <h2 id="histTitulo">Historial de citas</h2>
                 <button type="button" class="modal-x" data-cerrar aria-label="Cerrar">
@@ -420,13 +592,15 @@
                 </button>
             </div>
 
-            <div class="modal-cuerpo">
-                <div class="chips">
-                    <button type="button" class="chip activo" data-filtro="completada">Terminadas</button>
-                    <button type="button" class="chip" data-filtro="cancelada">Canceladas</button>
-                    <button type="button" class="chip" data-filtro="no_asistio">No asistió</button>
+            <div class="modal-filtros">
+                <div class="chips" role="group" aria-label="Filtrar historial">
+                    <button type="button" class="chip activo" data-filtro="completada" aria-pressed="true">Terminadas</button>
+                    <button type="button" class="chip" data-filtro="cancelada" aria-pressed="false">Canceladas</button>
+                    <button type="button" class="chip" data-filtro="no_asistio" aria-pressed="false">No asistió</button>
                 </div>
+            </div>
 
+            <div class="modal-cuerpo sin-pie">
                 <div class="hist">
                     @foreach ($historial as $h)
                         <div class="hist-item" data-estado="{{ $h['estado'] }}">
@@ -450,9 +624,30 @@
     (function () {
         const URL_BASE = @json(url('/panel/citas')) + '/';
 
-        // ---------- Modales (apertura y cierre) ----------
-        function abrir(m) { m.classList.add('abierto'); document.body.style.overflow = 'hidden'; }
-        function cerrar(m) { m.classList.remove('abierto'); document.body.style.overflow = ''; }
+        // ---------- Modales (apertura, cierre y foco) ----------
+        let activo = null;
+        let disparador = null;
+
+        function abrir(m, origen) {
+            activo = m;
+            disparador = origen || null;
+            m.classList.add('abierto');
+            document.documentElement.classList.add('sin-scroll');
+            // Se enfoca la caja (no un campo) para no abrir el teclado de golpe en el celular
+            m.querySelector('.modal-caja').focus({ preventScroll: true });
+        }
+
+        function cerrar(m) {
+            m = m || activo;
+            if (!m) return;
+            m.classList.remove('abierto');
+            document.documentElement.classList.remove('sin-scroll');
+            if (disparador && document.contains(disparador)) {
+                disparador.focus({ preventScroll: true });
+            }
+            activo = null;
+            disparador = null;
+        }
 
         document.querySelectorAll('.modal').forEach(function (m) {
             m.querySelectorAll('[data-cerrar]').forEach(function (b) {
@@ -460,9 +655,30 @@
             });
             m.addEventListener('click', function (e) { if (e.target === m) cerrar(m); });
         });
+
         document.addEventListener('keydown', function (e) {
-            if (e.key !== 'Escape') return;
-            document.querySelectorAll('.modal.abierto').forEach(cerrar);
+            if (!activo) return;
+
+            if (e.key === 'Escape') {
+                cerrar();
+                return;
+            }
+
+            // Mantener el foco dentro del modal abierto
+            if (e.key === 'Tab') {
+                const caja = activo.querySelector('.modal-caja');
+                const foco = caja.querySelectorAll('button:not([disabled]):not([hidden]), input:not([disabled]):not([type="hidden"]), a[href]');
+                if (!foco.length) return;
+                const primero = foco[0];
+                const ultimo = foco[foco.length - 1];
+                if (e.shiftKey && (document.activeElement === primero || document.activeElement === caja)) {
+                    e.preventDefault();
+                    ultimo.focus();
+                } else if (!e.shiftKey && document.activeElement === ultimo) {
+                    e.preventDefault();
+                    primero.focus();
+                }
+            }
         });
 
         // ---------- Acciones con confirmación ----------
@@ -502,7 +718,7 @@
         document.querySelectorAll('.js-editar').forEach(function (b) {
             const d = JSON.parse(b.dataset.cita);
             CITAS[d.id] = d;
-            b.addEventListener('click', function () { abrirEdicion(d.id, true); });
+            b.addEventListener('click', function () { abrirEdicion(d.id, true, b); });
         });
 
         function hoyISO() {
@@ -510,7 +726,7 @@
             return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
         }
 
-        function abrirEdicion(id, conDatos) {
+        function abrirEdicion(id, conDatos, origen) {
             const d = CITAS[id];
             if (!d) return;
 
@@ -527,19 +743,24 @@
                 if (err) err.remove();
             }
             btnGuardarHora.disabled = false;
-            abrir(modalHora);
+            abrir(modalHora, origen);
         }
 
         formHora.addEventListener('submit', function () { btnGuardarHora.disabled = true; });
 
         // ---------- Historial ----------
         const modalHist = document.getElementById('modalHistorial');
+        const cuerpoHist = modalHist.querySelector('.modal-cuerpo');
         const chips = Array.from(modalHist.querySelectorAll('.chip'));
         const items = Array.from(modalHist.querySelectorAll('.hist-item'));
         const histVacio = document.getElementById('histVacio');
 
         function filtrar(estado) {
-            chips.forEach(function (c) { c.classList.toggle('activo', c.dataset.filtro === estado); });
+            chips.forEach(function (c) {
+                const on = c.dataset.filtro === estado;
+                c.classList.toggle('activo', on);
+                c.setAttribute('aria-pressed', on ? 'true' : 'false');
+            });
             let visibles = 0;
             items.forEach(function (i) {
                 const mostrar = i.dataset.estado === estado;
@@ -547,20 +768,28 @@
                 if (mostrar) visibles++;
             });
             histVacio.hidden = visibles > 0;
+            cuerpoHist.scrollTop = 0;
         }
 
         chips.forEach(function (c) { c.addEventListener('click', function () { filtrar(c.dataset.filtro); }); });
-        document.getElementById('btnHistorial').addEventListener('click', function () {
+        document.getElementById('btnHistorial').addEventListener('click', function (e) {
             filtrar('completada');
-            abrir(modalHist);
+            abrir(modalHist, e.currentTarget);
         });
         filtrar('completada');
+
+        // Al volver con el botón "atrás" del celular los botones podrían quedar bloqueados
+        window.addEventListener('pageshow', function (e) {
+            if (!e.persisted) return;
+            btnGuardarHora.disabled = false;
+            document.querySelectorAll('.js-accion button[type="submit"]').forEach(function (b) { b.disabled = false; });
+        });
 
         // ---------- Errores ----------
         @if ($errors->has('accion'))
             Swal.fire({
                 toast: true,
-                position: 'top-end',
+                position: window.matchMedia('(max-width: 639px)').matches ? 'top' : 'top-end',
                 icon: 'error',
                 title: @json($errors->first('accion')),
                 showConfirmButton: false,
