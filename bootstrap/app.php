@@ -10,13 +10,15 @@ return Application::configure(basePath: dirname(__DIR__))
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
     )
-   ->withMiddleware(function (Middleware $middleware) {
-    $middleware->alias([
-        'admin' => \App\Http\Middleware\EsAdmin::class,
-    ]);
-    $middleware->redirectGuestsTo('/barbero/login');
-    $middleware->redirectUsersTo('/panel');
-})
+    ->withMiddleware(function (Middleware $middleware) {
+        $middleware->trustProxies(at: '*');
+
+        $middleware->alias([
+            'admin' => \App\Http\Middleware\EsAdmin::class,
+        ]);
+        $middleware->redirectGuestsTo('/barbero/login');
+        $middleware->redirectUsersTo('/panel');
+    })
     ->withExceptions(function (Exceptions $exceptions): void {
         //
     })->create();
