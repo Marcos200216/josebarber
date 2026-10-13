@@ -10,6 +10,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
+use App\Services\DisponibilidadService;
+use Illuminate\Http\JsonResponse;
 
 class CitaController extends Controller
 {
@@ -145,6 +147,194 @@ class CitaController extends Controller
         return redirect()
             ->route('citas')
             ->with('ok', 'Cita movida al ' . $this->etiquetaDia($nuevoInicio) . ' a las ' . $nuevoInicio->format('H:i') . '.');
+    }
+
+    /**
+     * Calendario del barbero: por cada día del mes, si trabaja y cuántas citas pendientes tiene.
+     * GET panel/citas/calendario?mes=YYYY-MM
+     */
+    public function calendario(Request $request): JsonResponse
+    {
+        $tz = config('app.timezone');
+        $mes = (string) $request->query('mes', now($tz)->format('Y-m'));
+
+        if (! preg_match('/^\d{4}-(0[1-9]|1[0-2])$/', $mes)) {
+            return response()->json(['ok' => false, 'mensaje' => 'El mes no es válido.'], 422);
+        }
+
+        $user = $request->user();
+        $ini = Carbon::createFromFormat('!Y-m', $mes, $tz)->startOfMonth();
+        $fin = $ini->copy()->endOfMonth();
+        $hoy = now($tz)->startOfDay();
+
+        $diasTrabajo = $user->horarios()->where('trabaja', true)->pluck('dia_semana')
+            ->map(fn ($d) => (int) $d)->all();
+
+        $conteo = Cita::where('user_id', $user->id)
+            ->where('estado', 'pendiente')
+            ->whereBetween('inicio', [$ini, $fin])
+            ->get(['inicio'])
+            ->groupBy(fn (Cita $c) => $c->inicio->format('Y-m-d'))
+            ->map(fn ($grupo) => $grupo->count());
+
+        $dias = [];
+        for ($d = $ini->copy(); $d->lte($fin); $d->addDay()) {
+            $clave = $d->format('Y-m-d');
+            $dias[$clave] = [
+                'trabaja' => in_array($d->dayOfWeek, $diasTrabajo, true),
+                'citas' => (int) ($conteo[$clave] ?? 0),
+                'pasado' => $d->lt($hoy),
+            ];
+        }
+
+        return response()->json([
+            'ok' => true,
+            'mes' => $mes,
+            'titulo' => ucfirst($ini->copy()->locale('es')->translatedFormat('F Y')),
+            'primer_dia_semana' => $ini->dayOfWeek, // 0 = domingo
+            'dias' => $dias,
+        ])->header('Cache-Control', 'no-store');
+    }
+
+    /**
+     * Agenda de un día, hora por hora: libre, cita, bloqueo. Sin las horas de almuerzo.
+     * GET panel/citas/dia?fecha=YYYY-MM-DD   (solo desde hoy en adelante)
+     */
+    public function dia(Request $request): JsonResponse
+    {
+        $tz = config('app.timezone');
+        $texto = (string) $request->query('fecha', '');
+
+        try {
+            $dia = Carbon::createFromFormat('!Y-m-d', $texto, $tz);
+        } catch (\Throwable $e) {
+            $dia = null;
+        }
+
+        if (! $dia || $dia->format('Y-m-d') !== $texto) {
+            return response()->json(['ok' => false, 'mensaje' => 'La fecha no es válida.'], 422);
+        }
+
+        $ahora = now($tz);
+
+        if ($dia->lt($ahora->copy()->startOfDay())) {
+            return response()->json(['ok' => false, 'mensaje' => 'Solo puedes ver desde hoy en adelante.'], 422);
+        }
+
+        $user = $request->user();
+        $diaIni = $dia->copy();
+        $diaFin = $dia->copy()->endOfDay();
+
+        $horario = $user->horarios()->where('dia_semana', $dia->dayOfWeek)->first();
+        $trabaja = $horario && $horario->trabaja;
+
+        $citas = Cita::with('corte')
+            ->where('user_id', $user->id)
+            ->where('estado', 'pendiente')
+            ->where('inicio', '<', $diaFin)
+            ->where('fin', '>', $diaIni)
+            ->orderBy('inicio')
+            ->get();
+
+        $bloqueos = $user->bloqueos()
+            ->where('inicio', '<', $diaFin)
+            ->where('fin', '>', $diaIni)
+            ->get();
+
+        $filas = [];
+        $mostradas = [];
+        $jornada = null;
+        $pausa = null;
+
+        if ($trabaja) {
+            $fecha = $dia->format('Y-m-d');
+            $jIni = Carbon::parse($fecha . ' ' . $horario->hora_inicio, $tz);
+            $jFin = Carbon::parse($fecha . ' ' . $horario->hora_fin, $tz);
+            $pIni = ($horario->pausa_inicio && $horario->pausa_fin) ? Carbon::parse($fecha . ' ' . $horario->pausa_inicio, $tz) : null;
+            $pFin = ($horario->pausa_inicio && $horario->pausa_fin) ? Carbon::parse($fecha . ' ' . $horario->pausa_fin, $tz) : null;
+            $paso = DisponibilidadService::INTERVALO_MINUTOS;
+
+            $jornada = $jIni->format('g:i a') . ' a ' . $jFin->format('g:i a');
+            $pausa = $pIni ? $pIni->format('g:i a') . ' a ' . $pFin->format('g:i a') : null;
+
+            for ($ini = $jIni->copy(); $ini->lt($jFin); $ini->addMinutes($paso)) {
+                $fin = $ini->copy()->addMinutes($paso);
+                if ($fin->gt($jFin)) {
+                    $fin = $jFin->copy();
+                }
+
+                // La hora que cae completa dentro del almuerzo no se muestra.
+                if ($pIni && $ini->gte($pIni) && $fin->lte($pFin)) {
+                    continue;
+                }
+
+                $enFila = $citas->filter(fn (Cita $c) => $c->inicio->lt($fin) && $c->fin->gt($ini))->values();
+                $empiezan = $enFila->filter(fn (Cita $c) => $c->inicio->gte($ini))->values();
+
+                if ($empiezan->isNotEmpty()) {
+                    $tipo = 'cita';
+                    $lista = $empiezan;
+                } elseif ($enFila->isNotEmpty()) {
+                    $tipo = 'continua';
+                    $lista = $enFila;
+                } elseif ($bloqueos->contains(fn ($b) => $b->inicio->lt($fin) && $b->fin->gt($ini))) {
+                    $tipo = 'bloqueo';
+                    $lista = collect();
+                } elseif ($fin->lte($ahora)) {
+                    $tipo = 'pasada';
+                    $lista = collect();
+                } else {
+                    $tipo = 'libre';
+                    $lista = collect();
+                }
+
+                foreach ($lista as $c) {
+                    $mostradas[$c->id] = true;
+                }
+
+                $filas[] = [
+                                        'hora' => $ini->format('g:i a'),
+                    'hasta' => $fin->format('g:i a'),
+                    'valor' => $ini->format('H:i'),
+                    'tipo' => $tipo,
+                    'citas' => $lista->map(fn (Cita $c) => $this->presentarDia($c))->all(),
+                ];
+            }
+        }
+
+        // Citas que quedaron fuera de su horario (por ejemplo, movidas a mano).
+        $otras = $citas->filter(fn (Cita $c) => ! isset($mostradas[$c->id]))
+            ->map(fn (Cita $c) => $this->presentarDia($c))
+            ->values()
+            ->all();
+
+        return response()->json([
+            'ok' => true,
+            'fecha' => $dia->format('Y-m-d'),
+            'etiqueta' => $this->etiquetaDia($dia),
+            'titulo' => ucfirst($dia->copy()->locale('es')->translatedFormat('l j \d\e F')),
+            'trabaja' => (bool) $trabaja,
+            'jornada' => $jornada,
+            'pausa' => $pausa,
+            'total_citas' => $citas->count(),
+            'horas_libres' => collect($filas)->where('tipo', 'libre')->count(),
+            'filas' => $filas,
+            'otras' => $otras,
+        ])->header('Cache-Control', 'no-store');
+    }
+
+    private function presentarDia(Cita $c): array
+    {
+        return [
+            'id' => $c->id,
+            'cliente' => $c->cliente_nombre,
+            'telefono' => $c->cliente_telefono,
+            'wa' => preg_replace('/\D/', '', (string) $c->cliente_telefono),
+            'corte' => $c->corte?->nombre ?? 'Corte',
+            'ini' => $c->inicio->format('g:i a'),
+            'fin' => $c->fin->format('g:i a'),
+            'minutos' => (int) round(($c->fin->getTimestamp() - $c->inicio->getTimestamp()) / 60),
+        ];
     }
 
     private function cambiarEstado(Request $request, int $cita, string $estado, string $mensaje, bool $exigeInicio): RedirectResponse

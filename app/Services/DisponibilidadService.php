@@ -8,8 +8,8 @@ use Carbon\Carbon;
 
 class DisponibilidadService
 {
-    public const DIAS_ADELANTE = 14;      // hoy + 13 = 14 días reservables
-    public const MARGEN_MINUTOS = 60;     // anticipación mínima
+       public const DIAS_ADELANTE = 30;      // hoy + 29 = 30 días reservables
+    public const MARGEN_MINUTOS = 0;     // anticipación mínima
     public const INTERVALO_MINUTOS = 60;  // una hora ofrecida cada 60 min
 
     /**

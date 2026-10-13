@@ -380,6 +380,117 @@
     .hist-vacio[hidden] { display: none; }
 
     /* Celulares muy angostos: un campo por fila */
+        /* ---------- Botones del encabezado ---------- */
+    .encabezado-botones { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+
+    /* ---------- Calendario ---------- */
+    .cal { display: grid; gap: 6px; }
+    .cal-nav { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+    .cal-nav strong { font-family: 'Barlow Condensed', sans-serif; font-size: 1.5rem; font-weight: 600; text-align: center; }
+
+    .cal-flecha {
+        width: 44px;
+        height: 44px;
+        flex-shrink: 0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--blanco);
+        border: 1px solid var(--gris-2);
+        border-radius: 10px;
+        color: var(--negro);
+        cursor: pointer;
+        touch-action: manipulation;
+        -webkit-tap-highlight-color: transparent;
+        transition: background 400ms ease;
+    }
+    .cal-flecha:hover:not(:disabled) { background: var(--gris-1); }
+    .cal-flecha:disabled { opacity: .35; cursor: not-allowed; }
+
+    .cal-semana,
+    .cal-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
+    .cal-semana span { text-align: center; font-size: .72rem; font-weight: 800; letter-spacing: .08em; color: var(--gris-3); }
+
+    .cal-dia {
+        min-width: 0;
+        height: 54px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 3px;
+        padding: 0;
+        background: var(--blanco);
+        border: 1px solid var(--gris-2);
+        border-radius: 10px;
+        font: inherit;
+        color: var(--negro);
+        cursor: pointer;
+        touch-action: manipulation;
+        -webkit-tap-highlight-color: transparent;
+        transition: background 400ms ease, color 400ms ease, border-color 400ms ease;
+    }
+    .cal-dia b { font-family: 'Barlow Condensed', sans-serif; font-size: 1.3rem; font-weight: 600; line-height: 1; }
+    .cal-dia:hover:not(:disabled):not(.sel) { border-color: var(--negro); }
+    .cal-dia.hoy { border: 2px solid var(--negro); }
+    .cal-dia.sel { background: var(--negro); color: var(--blanco); border-color: var(--negro); }
+    .cal-dia:disabled { opacity: .38; background: var(--gris-1); cursor: not-allowed; }
+    .cal-dia:focus-visible,
+    .cal-flecha:focus-visible { outline: 2px solid var(--negro); outline-offset: 2px; }
+
+    .cal-cuenta {
+        min-width: 18px;
+        padding: 0 5px;
+        border-radius: 999px;
+        background: var(--negro);
+        color: var(--blanco);
+        font-size: .68rem;
+        font-weight: 700;
+        line-height: 16px;
+        text-align: center;
+    }
+    .cal-cuenta.cero { visibility: hidden; }
+    .cal-dia.sel .cal-cuenta { background: var(--blanco); color: var(--negro); }
+
+    .cal-error { grid-column: 1 / -1; display: grid; gap: 10px; justify-items: start; padding: 12px 14px; border: 1px solid var(--gris-4); border-left-width: 4px; border-radius: 8px; font-size: .92rem; }
+    .cal-error p { margin: 0; }
+
+    /* ---------- Agenda del día ---------- */
+    .agenda { display: grid; gap: 10px; }
+    .agenda-cab h3 { margin: 0 0 4px; font-size: 1.6rem; }
+    .agenda-cab p { margin: 0; font-size: .9rem; color: var(--gris-4); }
+    .agenda-cab .agenda-resumen { margin-top: 4px; font-weight: 700; color: var(--negro); }
+    .agenda-lista { display: grid; gap: 8px; }
+    .agenda-sub { margin: 6px 0 0; font-size: .78rem; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: var(--gris-3); }
+
+    .fila-hora {
+        display: grid;
+        grid-template-columns: 84px minmax(0, 1fr);
+        gap: 10px;
+        align-items: start;
+        padding: 10px 12px;
+        background: var(--blanco);
+        border: 1px solid var(--gris-2);
+        border-radius: 12px;
+    }
+    .fila-hora .hh { font-family: 'Barlow Condensed', sans-serif; font-size: 1.25rem; font-weight: 600; line-height: 1.3; }
+        .fila-hora .hh small { display: block; font-family: 'Manrope', sans-serif; font-size: .72rem; font-weight: 600; line-height: 1.3; color: var(--gris-4); }
+    .fila-hora .estado { min-width: 0; display: grid; gap: 8px; font-size: .92rem; color: var(--gris-4); overflow-wrap: anywhere; }
+    .fila-hora .libre-txt { color: var(--negro); line-height: 1.6; }
+    .fila-hora.cita { border: 2px solid var(--negro); padding: 9px 11px; }
+    .fila-hora.continua,
+    .fila-hora.bloqueo,
+    .fila-hora.pasada { background: var(--gris-1); border-color: var(--gris-1); }
+    .fila-hora.pasada .hh { color: var(--gris-3); }
+
+    .agenda-cita { display: grid; gap: 2px; }
+    .agenda-cita strong { color: var(--negro); font-size: 1rem; }
+    .agenda-wa { display: inline-flex; align-items: center; min-height: 32px; font-weight: 600; color: var(--negro); text-decoration: underline; text-underline-offset: 3px; }
+
+    @media (min-width: 640px) {
+        .encabezado-botones { display: flex; gap: 10px; }
+        .cal-dia { height: 58px; }
+    }
     @media (max-width: 359px) {
         .fila-2 { grid-template-columns: 1fr; }
         .cita-acciones { grid-template-columns: 1fr; }
@@ -441,9 +552,14 @@
             <h1>Citas</h1>
             <p>Tus citas pendientes. Marca cada una como terminada cuando el cliente se atienda.</p>
         </div>
-        <button type="button" class="btn btn-claro" id="btnHistorial">
-            <i data-lucide="history"></i> Terminadas
-        </button>
+                <div class="encabezado-botones">
+            <button type="button" class="btn btn-claro" id="btnCalendario">
+                <i data-lucide="calendar-days"></i> Calendario
+            </button>
+            <button type="button" class="btn btn-claro" id="btnHistorial">
+                <i data-lucide="history"></i> Terminadas
+            </button>
+        </div>
     </div>
 
     <div class="resumen" data-reveal>
@@ -617,6 +733,39 @@
             </div>
         </div>
     </div>
+
+        {{-- ---------- Modal calendario ---------- --}}
+    <div class="modal" id="modalCalendario" role="dialog" aria-modal="true" aria-labelledby="calModalTitulo">
+        <div class="modal-caja" tabindex="-1">
+            <div class="modal-cab">
+                <h2 id="calModalTitulo">Calendario</h2>
+                <button type="button" class="modal-x" data-cerrar aria-label="Cerrar">
+                    <i data-lucide="x"></i>
+                </button>
+            </div>
+
+            <div class="modal-cuerpo sin-pie">
+                <div class="cal-nav">
+                    <button type="button" class="cal-flecha" id="calAnt" aria-label="Mes anterior">
+                        <i data-lucide="chevron-left"></i>
+                    </button>
+                    <strong id="calTitulo" aria-live="polite"></strong>
+                    <button type="button" class="cal-flecha" id="calSig" aria-label="Mes siguiente">
+                        <i data-lucide="chevron-right"></i>
+                    </button>
+                </div>
+
+                <div class="cal">
+                    <div class="cal-semana" aria-hidden="true">
+                        <span>D</span><span>L</span><span>M</span><span>M</span><span>J</span><span>V</span><span>S</span>
+                    </div>
+                    <div class="cal-grid" id="calGrid"></div>
+                </div>
+
+                <div class="agenda" id="calAgenda" aria-live="polite"></div>
+            </div>
+        </div>
+    </div>
 @endsection
 
 @push('scripts')
@@ -786,6 +935,220 @@
         });
 
         // ---------- Errores ----------
+
+        // ---------- Calendario ----------
+        (function () {
+            const URL_CAL = @json(route('citas.calendario'));
+            const URL_DIA = @json(route('citas.dia'));
+            const MESES_ADELANTE = 2;
+            const reducir = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+            const modalCal = document.getElementById('modalCalendario');
+            const cuerpoCal = modalCal.querySelector('.modal-cuerpo');
+            const tituloMes = document.getElementById('calTitulo');
+            const btnAnt = document.getElementById('calAnt');
+            const btnSig = document.getElementById('calSig');
+            const gridCal = document.getElementById('calGrid');
+            const agenda = document.getElementById('calAgenda');
+
+            let mesBase = '';
+            let mesActual = '';
+            let diaSel = null;
+            let cacheMes = {};
+            let cacheDia = {};
+            let tokenMes = 0;
+            let tokenDia = 0;
+
+            function esc(s) {
+                return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+                    return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+                });
+            }
+
+            function moverMes(mes, delta) {
+                const p = mes.split('-');
+                const d = new Date(parseInt(p[0], 10), parseInt(p[1], 10) - 1 + delta, 1);
+                return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+            }
+
+            async function pedirJson(url) {
+                let r;
+                try {
+                    r = await fetch(url, { headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' } });
+                } catch (e) {
+                    throw new Error('No pudimos conectarnos. Revisa tu internet e inténtalo de nuevo.');
+                }
+                if (r.redirected || r.status === 401 || r.status === 419) {
+                    throw new Error('Tu sesión terminó. Recarga la página para entrar de nuevo.');
+                }
+                let d = null;
+                try { d = await r.json(); } catch (e) { d = null; }
+                if (!r.ok || !d || !d.ok) {
+                    throw new Error((d && d.mensaje) || 'Algo salió mal. Inténtalo de nuevo en unos segundos.');
+                }
+                return d;
+            }
+
+            function errorHtml(texto, accion) {
+                return '<div class="cal-error"><p>' + esc(texto) + '</p>' +
+                    '<button type="button" class="btn btn-claro btn-sm" data-cal="' + accion + '">Reintentar</button></div>';
+            }
+
+            // ----- Mes -----
+            function pintarMes(d) {
+                tituloMes.textContent = d.titulo;
+                const fechas = Object.keys(d.dias);
+                const hoy = mesActual === mesBase
+                    ? fechas.find(function (f) { return !d.dias[f].pasado; })
+                    : null;
+
+                let html = '';
+                for (let i = 0; i < d.primer_dia_semana; i++) html += '<span></span>';
+
+                fechas.forEach(function (f) {
+                    const x = d.dias[f];
+                    const n = parseInt(f.slice(8), 10);
+                    const activo = !x.pasado && (x.trabaja || x.citas > 0);
+                    const etiqueta = n + ' de ' + d.titulo.toLowerCase() + ', ' +
+                        (x.citas === 0 ? 'sin citas' : (x.citas === 1 ? '1 cita' : x.citas + ' citas')) +
+                        (x.trabaja ? '' : ', no trabajas');
+
+                    html += '<button type="button" class="cal-dia' + (f === hoy ? ' hoy' : '') + (f === diaSel ? ' sel' : '') + '"' +
+                        ' data-cal="dia" data-fecha="' + f + '"' + (activo ? '' : ' disabled') +
+                        ' aria-label="' + esc(etiqueta) + '" aria-pressed="' + (f === diaSel ? 'true' : 'false') + '">' +
+                        '<b>' + n + '</b><span class="cal-cuenta' + (x.citas ? '' : ' cero') + '">' + x.citas + '</span></button>';
+                });
+
+                gridCal.innerHTML = html;
+            }
+
+            async function mostrarMes(mes) {
+                const t = ++tokenMes;
+                mesActual = mes;
+                btnAnt.disabled = mes <= mesBase;
+                btnSig.disabled = mes >= moverMes(mesBase, MESES_ADELANTE);
+                gridCal.innerHTML = '<p class="nota" style="grid-column:1/-1">Cargando…</p>';
+
+                try {
+                    const d = cacheMes[mes] || (cacheMes[mes] = await pedirJson(URL_CAL + '?mes=' + encodeURIComponent(mes)));
+                    if (t !== tokenMes) return;
+                    pintarMes(d);
+                } catch (e) {
+                    if (t !== tokenMes) return;
+                    delete cacheMes[mes];
+                    gridCal.innerHTML = errorHtml(e.message, 'mes-reintentar');
+                }
+            }
+
+            // ----- Día -----
+            function citaHtml(c) {
+                return '<div class="agenda-cita"><strong>' + esc(c.cliente) + '</strong>' +
+                    '<span>' + esc(c.corte) + ' · ' + esc(c.ini) + ' a ' + esc(c.fin) + '</span>' +
+                    (c.wa ? '<a class="agenda-wa" href="https://wa.me/' + esc(c.wa) + '" target="_blank" rel="noopener">' + esc(c.telefono) + '</a>' : '') +
+                    '</div>';
+            }
+
+            function filaHtml(f) {
+                let estado;
+
+                if (f.tipo === 'cita') {
+                    estado = f.citas.map(citaHtml).join('');
+                } else if (f.tipo === 'continua') {
+                    estado = f.citas.map(function (c) {
+                        return '<span>Sigue con <strong>' + esc(c.cliente) + '</strong> hasta las ' + esc(c.fin) + '</span>';
+                    }).join('');
+                } else if (f.tipo === 'bloqueo') {
+                    estado = '<span>Bloqueada</span>';
+                } else if (f.tipo === 'pasada') {
+                    estado = '<span>Ya pasó</span>';
+                } else {
+                    estado = '<strong class="libre-txt">Libre</strong>';
+                }
+
+                                return '<div class="fila-hora ' + esc(f.tipo) + '"><div class="hh">' + esc(f.hora) + '<small>hasta ' + esc(f.hasta) + '</small></div>' +
+                    '<div class="estado">' + estado + '</div></div>';
+            }
+
+            function pintarDia(d) {
+                let html = '<div class="agenda-cab"><h3>' + esc(d.titulo) + '</h3>';
+
+                if (d.trabaja) {
+                    html += '<p>Horario: ' + esc(d.jornada) + (d.pausa ? ' · Almuerzo: ' + esc(d.pausa) : '') + '</p>';
+                    html += '<p class="agenda-resumen">' +
+                        (d.total_citas === 0 ? 'Sin citas' : (d.total_citas === 1 ? '1 cita' : d.total_citas + ' citas')) + ' · ' +
+                        (d.horas_libres === 1 ? '1 hora libre' : d.horas_libres + ' horas libres') + '</p>';
+                } else {
+                    html += '<p>No trabajas este día.</p>';
+                }
+
+                html += '</div>';
+
+                if (d.filas.length) {
+                    html += '<div class="agenda-lista">' + d.filas.map(filaHtml).join('') + '</div>';
+                }
+
+                if (d.otras.length) {
+                    html += '<p class="agenda-sub">Fuera de tu horario</p><div class="agenda-lista">' +
+                        d.otras.map(function (c) {
+                            return '<div class="fila-hora cita"><div class="hh">' + esc(c.ini) + '</div><div class="estado">' + citaHtml(c) + '</div></div>';
+                        }).join('') + '</div>';
+                }
+
+                agenda.innerHTML = html;
+            }
+
+            function marcarSeleccion() {
+                gridCal.querySelectorAll('.cal-dia').forEach(function (b) {
+                    const on = b.dataset.fecha === diaSel;
+                    b.classList.toggle('sel', on);
+                    b.setAttribute('aria-pressed', on ? 'true' : 'false');
+                });
+            }
+
+            async function mostrarDia(f, desplazar) {
+                const t = ++tokenDia;
+                diaSel = f;
+                marcarSeleccion();
+                agenda.innerHTML = '<p class="nota">Cargando…</p>';
+
+                try {
+                    const d = cacheDia[f] || (cacheDia[f] = await pedirJson(URL_DIA + '?fecha=' + encodeURIComponent(f)));
+                    if (t !== tokenDia) return;
+                    pintarDia(d);
+                    if (desplazar) agenda.scrollIntoView({ behavior: reducir ? 'auto' : 'smooth', block: 'start' });
+                } catch (e) {
+                    if (t !== tokenDia) return;
+                    delete cacheDia[f];
+                    agenda.innerHTML = errorHtml(e.message, 'dia-reintentar');
+                }
+            }
+
+            // ----- Eventos -----
+            modalCal.addEventListener('click', function (e) {
+                const el = e.target.closest('[data-cal]');
+                if (!el || el.disabled) return;
+
+                const accion = el.dataset.cal;
+                if (accion === 'dia') mostrarDia(el.dataset.fecha, true);
+                else if (accion === 'mes-reintentar') mostrarMes(mesActual);
+                else if (accion === 'dia-reintentar' && diaSel) mostrarDia(diaSel, false);
+            });
+
+            btnAnt.addEventListener('click', function () { mostrarMes(moverMes(mesActual, -1)); });
+            btnSig.addEventListener('click', function () { mostrarMes(moverMes(mesActual, 1)); });
+
+            document.getElementById('btnCalendario').addEventListener('click', function (e) {
+                const hoy = hoyISO();
+                mesBase = hoy.slice(0, 7);
+                cacheMes = {};
+                cacheDia = {};
+                abrir(modalCal, e.currentTarget);
+                cuerpoCal.scrollTop = 0;
+                mostrarMes(mesBase);
+                mostrarDia(hoy, false);
+            });
+        })();
+
         @if ($errors->has('accion'))
             Swal.fire({
                 toast: true,

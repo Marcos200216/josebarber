@@ -27,11 +27,11 @@ Route::prefix('reservar')->name('reserva.')->middleware('throttle:60,1')->group(
     Route::post('/', [ReservaController::class, 'store'])->middleware('throttle:8,1,reserva-store')->name('store');
 
     // Ver mi cita (teléfono + PIN). Cada POST tiene su propio contador de intentos.
-       // Ver mi cita (teléfono + PIN). Cada POST tiene su propio contador de intentos.
+    // Ver mi cita (teléfono + PIN). Cada POST tiene su propio contador de intentos.
     Route::prefix('mi-cita')->name('mi-cita.')->group(function () {
         Route::get('/', [MiCitaController::class, 'index'])->name('index');
         Route::post('verificar', [MiCitaController::class, 'verificar'])->middleware('throttle:20,1,mi-cita-verificar')->name('verificar');
-                Route::post('olvide-codigo', [MiCitaController::class, 'olvideCodigo'])->middleware('throttle:10,1,mi-cita-olvide')->name('olvide');
+        Route::post('olvide-codigo', [MiCitaController::class, 'olvideCodigo'])->middleware('throttle:10,1,mi-cita-olvide')->name('olvide');
         Route::post('salir', [MiCitaController::class, 'salir'])->name('salir');
         Route::post('{cita}/cancelar', [MiCitaController::class, 'cancelar'])->whereNumber('cita')->middleware('throttle:20,1,mi-cita-accion')->name('cancelar');
 
@@ -59,6 +59,8 @@ Route::middleware('auth')->prefix('panel')->group(function () {
 
     Route::get('perfil', [PerfilController::class, 'index'])->name('perfil');
     Route::put('perfil', [PerfilController::class, 'update'])->name('perfil.update');
+    Route::put('perfil/correo', [PerfilController::class, 'correo'])->middleware('throttle:6,1,perfil-seguridad')->name('perfil.correo');
+    Route::put('perfil/clave', [PerfilController::class, 'clave'])->middleware('throttle:6,1,perfil-seguridad')->name('perfil.clave');
 
     Route::get('mis-cortes', [MisCortesController::class, 'index'])->name('mis-cortes');
     Route::put('mis-cortes', [MisCortesController::class, 'update'])->name('mis-cortes.update');
@@ -77,6 +79,8 @@ Route::middleware('auth')->prefix('panel')->group(function () {
     Route::delete('galeria/{foto}', [GaleriaController::class, 'destroy'])->whereNumber('foto')->name('galeria.destroy');
 
     Route::get('citas', [CitaController::class, 'index'])->name('citas');
+        Route::get('citas/calendario', [CitaController::class, 'calendario'])->name('citas.calendario');
+    Route::get('citas/dia', [CitaController::class, 'dia'])->name('citas.dia');
     Route::patch('citas/{cita}/completar', [CitaController::class, 'completar'])->whereNumber('cita')->name('citas.completar');
     Route::patch('citas/{cita}/no-asistio', [CitaController::class, 'noAsistio'])->whereNumber('cita')->name('citas.no-asistio');
     Route::patch('citas/{cita}/cancelar', [CitaController::class, 'cancelar'])->whereNumber('cita')->name('citas.cancelar');

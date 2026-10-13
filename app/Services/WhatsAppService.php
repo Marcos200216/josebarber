@@ -25,22 +25,21 @@ class WhatsAppService
     {
         $barbero = $cita->barbero;
 
-        $paraCliente = "Hola {$cita->cliente_nombre}, tu cita quedó reservada ✅\n\n"
+        $paraCliente = "*Cita reservada*\n\n"
+            . "Hola {$cita->cliente_nombre}, tu cita quedó reservada.\n\n"
             . $this->detalle($cita)
-            . "\n\n🔐 Tu código: {$pin}\n"
+            . "\n\nTu código: {$pin}\n"
             . "Lo necesitas para ver, cambiar o cancelar tu cita.\n\n"
-            . "🔗 Ver mi cita sin código:\n" . $cita->urlEnlace()
-            . $this->comoLlegar($barbero)
-            . "\n\n" . config('app.name');
+            . "Ver mi cita sin código:\n" . $cita->urlEnlace();
 
         // Con el envío real no se guarda el PIN en la base de datos.
         $guardado = config('whatsapp.driver') === 'simulado'
             ? null
-            : str_replace("Tu código: {$pin}", 'Tu código: ••••', $paraCliente);
+            : str_replace("Tu código: {$pin}", 'Tu código: ****', $paraCliente);
 
         $this->enviar($cita->cliente_telefono, $paraCliente, 'cita_nueva_cliente', $cita->id, $guardado);
 
-        $this->enviar($barbero?->phone, "Nueva cita 📅\n\n"
+        $this->enviar($barbero?->phone, "*Nueva cita*\n\n"
             . "Cliente: {$cita->cliente_nombre}\n"
             . "Teléfono: {$cita->cliente_telefono}\n"
             . $this->detalle($cita, false), 'cita_nueva_barbero', $cita->id);
@@ -50,43 +49,43 @@ class WhatsAppService
     {
         $barbero = $cita->barbero;
 
-        $this->enviar($cita->cliente_telefono, "Hola {$cita->cliente_nombre}, tu cita fue cambiada 🔄\n\n"
-            . $this->detalle($cita)
-            . $this->comoLlegar($barbero)
-            . "\n\n" . config('app.name'), 'cita_cambiada_cliente', $cita->id);
+        $this->enviar($cita->cliente_telefono, "*Cita cambiada*\n\n"
+            . "Hola {$cita->cliente_nombre}, tu cita fue cambiada. Estos son los datos nuevos:\n\n"
+            . $this->detalle($cita), 'cita_cambiada_cliente', $cita->id);
 
         $cambioDeBarbero = $barberoAnteriorId !== (int) $cita->user_id;
 
-        $this->enviar($barbero?->phone, ($cambioDeBarbero ? "Cita movida a tu agenda 🔄\n\n" : "Cita cambiada 🔄\n\n")
+        $this->enviar($barbero?->phone, ($cambioDeBarbero ? "*Cita movida a tu agenda*\n\n" : "*Cita cambiada*\n\n")
             . "Cliente: {$cita->cliente_nombre}\n"
             . "Teléfono: {$cita->cliente_telefono}\n"
             . $this->detalle($cita, false)
-            . "\n\nAntes era: " . $this->cuando($inicioAnterior), 'cita_cambiada_barbero', $cita->id);
+            . "\n\nAntes: " . $this->cuando($inicioAnterior), 'cita_cambiada_barbero', $cita->id);
 
         if ($cambioDeBarbero) {
             $anterior = User::find($barberoAnteriorId);
 
-            $this->enviar($anterior?->phone, "Una cita ya no es contigo 🔄\n\n"
+            $this->enviar($anterior?->phone, "*Cita reasignada*\n\n"
+                . "Una cita ya no es contigo. El cliente la movió a otro barbero.\n\n"
                 . "Cliente: {$cita->cliente_nombre}\n"
-                . "Era: " . $this->cuando($inicioAnterior) . "\n"
-                . "El cliente la movió a otro barbero.", 'cita_cambiada_barbero_anterior', $cita->id);
+                . "Era: " . $this->cuando($inicioAnterior), 'cita_cambiada_barbero_anterior', $cita->id);
         }
     }
 
     public function citaCancelada(Cita $cita): void
     {
-        $this->enviar($cita->cliente_telefono, "Hola {$cita->cliente_nombre}, tu cita fue cancelada ❌\n\n"
+        $this->enviar($cita->cliente_telefono, "*Cita cancelada*\n\n"
+            . "Hola {$cita->cliente_nombre}, tu cita fue cancelada.\n\n"
             . $this->detalle($cita)
-            . "\n\nCuando quieras reservar otra, entra al sitio.\n\n" . config('app.name'),
+            . "\n\nCuando quieras, puedes reservar otra cita en el sitio.",
             'cita_cancelada_cliente', $cita->id);
 
-        $this->enviar($cita->barbero?->phone, "Cita cancelada ❌\n\n"
+        $this->enviar($cita->barbero?->phone, "*Cita cancelada*\n\n"
             . "Cliente: {$cita->cliente_nombre}\n"
             . "Teléfono: {$cita->cliente_telefono}\n"
             . $this->detalle($cita, false), 'cita_cancelada_barbero', $cita->id);
     }
 
-        /** Recordatorio al cliente y al barbero. $cuando: '24h' o '2h'. */
+    /** Recordatorio al cliente y al barbero. $cuando: '24h' o '2h'. */
     public function recordatorio(Cita $cita, string $cuando): void
     {
         $barbero = $cita->barbero;
@@ -94,14 +93,13 @@ class WhatsAppService
 
         $titulo = $es24 ? 'tu cita es mañana' : 'tu cita es en 2 horas';
 
-        $this->enviar($cita->cliente_telefono, "Hola {$cita->cliente_nombre}, {$titulo} ⏰\n\n"
+        $this->enviar($cita->cliente_telefono, "*Recordatorio de cita*\n\n"
+            . "Hola {$cita->cliente_nombre}, {$titulo}.\n\n"
             . $this->detalle($cita)
-            . $this->comoLlegar($barbero)
-            . "\n\n🔗 ¿No puedes venir? Cámbiala o cancélala aquí:\n" . $cita->urlEnlace()
-            . "\n\n" . config('app.name'),
+            . "\n\n¿No puedes asistir? Cámbiala o cancélala aquí:\n" . $cita->urlEnlace(),
             "recordatorio_{$cuando}_cliente", $cita->id);
 
-        $this->enviar($barbero?->phone, ($es24 ? "Cita de mañana ⏰\n\n" : "Cita en 2 horas ⏰\n\n")
+        $this->enviar($barbero?->phone, ($es24 ? "*Cita de mañana*\n\n" : "*Cita en 2 horas*\n\n")
             . "Cliente: {$cita->cliente_nombre}\n"
             . "Teléfono: {$cita->cliente_telefono}\n"
             . $this->detalle($cita, false),
@@ -110,15 +108,15 @@ class WhatsAppService
 
     public function codigoNuevo(string $telefono, string $nombre, string $pin, ?int $citaId = null): void
     {
-        $mensaje = "Hola {$nombre}, este es tu código nuevo 🔐\n\n"
+        $mensaje = "*Código nuevo*\n\n"
+            . "Hola {$nombre}, este es tu código nuevo.\n\n"
             . "Código: {$pin}\n\n"
-            . "Lo necesitas para ver, cambiar o cancelar tus citas. Si no lo pediste tú, ignora este mensaje.\n\n"
-            . config('app.name');
+            . "Lo necesitas para ver, cambiar o cancelar tus citas. Si no lo pediste tú, ignora este mensaje.";
 
         // Con el envío real no se guarda el PIN en la base de datos.
         $guardado = config('whatsapp.driver') === 'simulado'
             ? null
-            : str_replace("Código: {$pin}", 'Código: ••••', $mensaje);
+            : str_replace("Código: {$pin}", 'Código: ****', $mensaje);
 
         $this->enviar($telefono, $mensaje, 'codigo_nuevo', $citaId, $guardado);
     }
@@ -214,31 +212,30 @@ class WhatsAppService
 
     private function detalle(Cita $cita, bool $conBarbero = true): string
     {
-        $linea = '✂️ ' . ($cita->corte?->nombre ?? 'Corte');
+        $lineas = ['Servicio: ' . ($cita->corte?->nombre ?? 'Corte')];
 
         if ($conBarbero) {
-            $linea .= "\n👤 Barbero: " . ($cita->barbero?->name ?? 'Barbero');
+            $lineas[] = 'Barbero: ' . ($cita->barbero?->name ?? 'Barbero');
         }
 
-        return $linea . "\n📅 " . $this->cuando($cita->inicio);
+        $lineas[] = 'Fecha: ' . $this->fecha($cita->inicio);
+        $lineas[] = 'Hora: ' . $this->hora($cita->inicio);
+
+        return implode("\n", $lineas);
+    }
+
+    private function fecha(Carbon $c): string
+    {
+        return ucfirst($c->copy()->locale('es')->translatedFormat('l j \d\e F'));
+    }
+
+    private function hora(Carbon $c): string
+    {
+        return $c->format('g:i a');
     }
 
     private function cuando(Carbon $c): string
     {
-        $c = $c->copy()->locale('es');
-
-        return ucfirst($c->translatedFormat('l j \d\e F')) . ' a las ' . $c->format('g:i a');
-    }
-
-    private function comoLlegar(?User $barbero): string
-    {
-        $url = trim((string) $barbero?->location_url);
-        $dir = trim((string) $barbero?->location_address);
-
-        if ($url === '' && $dir === '') {
-            return '';
-        }
-
-        return "\n\n📍 " . ($dir !== '' ? $dir : 'Cómo llegar') . ($url !== '' ? "\n{$url}" : '');
+        return $this->fecha($c) . ' a las ' . $this->hora($c);
     }
 }

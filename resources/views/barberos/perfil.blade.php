@@ -136,23 +136,29 @@
         color: var(--gris-3);
     }
 
-    .datos span,
-    .datos a {
+    .datos span {
         min-width: 0;
         color: var(--negro);
         overflow-wrap: anywhere;
         white-space: pre-line;
     }
 
-    .datos a {
-        display: inline-block;
-        padding: 2px 0;
-        font-weight: 600;
-        text-decoration: underline;
-        text-underline-offset: 3px;
+    .datos .falta span { color: var(--gris-3); font-style: italic; }
+
+    /* ---------- Tarjeta "Acceso a tu cuenta" ---------- */
+    .cuenta-card {
+        display: grid;
+        gap: 14px;
+        margin-top: 16px;
+        padding: 20px 16px;
+        background: var(--blanco);
+        border: 1px solid var(--gris-2);
+        border-radius: 14px;
     }
 
-    .datos .falta span { color: var(--gris-3); font-style: italic; }
+    .cuenta-card h3 { margin: 0 0 2px; font-size: 1.4rem; }
+    .cuenta-card p { margin: 0; color: var(--gris-4); font-size: .95rem; }
+    .cuenta-botones { display: grid; gap: 10px; }
 
     /* ---------- Modal (hoja inferior en móvil) ---------- */
     .modal {
@@ -264,12 +270,13 @@
     /* ---------- Campos ---------- */
     .campo { display: grid; gap: 6px; min-width: 0; }
     .campo > label { font-size: .88rem; font-weight: 600; color: var(--gris-4); }
-    .campo small { color: var(--gris-3); font-size: .8rem; line-height: 1.35; }
+    .campo small { color: var(--gris-3); font-size: .8rem; line-height: 1.35; overflow-wrap: anywhere; }
 
     /* 16px evita el zoom automático de iOS al enfocar un campo */
     .campo input[type="text"],
     .campo input[type="tel"],
-    .campo input[type="url"],
+    .campo input[type="email"],
+    .campo input[type="password"],
     .campo textarea {
         width: 100%;
         min-height: 48px;
@@ -358,6 +365,14 @@
         .info h2 { text-align: left; }
         .info .correo { text-align: left; margin-bottom: 18px; }
 
+        .cuenta-card {
+            grid-template-columns: 1fr auto;
+            align-items: center;
+            padding: 20px 24px;
+        }
+
+        .cuenta-botones { grid-auto-flow: column; }
+
         .modal { align-items: center; padding: 24px; }
         .modal-caja { border-radius: 16px; max-height: min(92vh, 780px); }
         .modal-cab::before { display: none; }
@@ -402,18 +417,6 @@
                     <i data-lucide="phone"></i>
                     <span>{{ $user->phone ?: 'Sin teléfono' }}</span>
                 </div>
-                <div class="{{ $user->location_address ? '' : 'falta' }}">
-                    <i data-lucide="map-pin"></i>
-                    <span>{{ $user->location_address ?: 'Sin dirección' }}</span>
-                </div>
-                <div class="{{ $user->location_url ? '' : 'falta' }}">
-                    <i data-lucide="navigation"></i>
-                    @if ($user->location_url)
-                        <a href="{{ $user->location_url }}" target="_blank" rel="noopener noreferrer">Ver en Google Maps</a>
-                    @else
-                        <span>Sin enlace de ubicación</span>
-                    @endif
-                </div>
                 <div class="{{ $user->bio ? '' : 'falta' }}">
                     <i data-lucide="text"></i>
                     <span>{{ $user->bio ?: 'Sin descripción' }}</span>
@@ -422,12 +425,27 @@
         </div>
     </section>
 
-    {{-- Modal editar --}}
+    <section class="cuenta-card" data-reveal>
+        <div>
+            <h3>Acceso a tu cuenta</h3>
+            <p>Cambia el correo o la contraseña con los que entras al panel.</p>
+        </div>
+        <div class="cuenta-botones">
+            <button type="button" class="btn btn-claro" id="btnCorreo">
+                <i data-lucide="mail"></i> Cambiar correo
+            </button>
+            <button type="button" class="btn btn-claro" id="btnClave">
+                <i data-lucide="lock"></i> Cambiar contraseña
+            </button>
+        </div>
+    </section>
+
+    {{-- Modal editar perfil --}}
     <div class="modal" id="modalPerfil" role="dialog" aria-modal="true" aria-labelledby="perfilTitulo">
         <div class="modal-caja" tabindex="-1">
             <div class="modal-cab">
                 <h2 id="perfilTitulo">Editar perfil</h2>
-                <button type="button" class="modal-x" id="perfilCerrar" aria-label="Cerrar">
+                <button type="button" class="modal-x" data-cerrar aria-label="Cerrar">
                     <i data-lucide="x"></i>
                 </button>
             </div>
@@ -488,23 +506,108 @@
                         <textarea id="fBio" name="bio" maxlength="1000" placeholder="Cuéntales a los clientes sobre tu experiencia y estilo.">{{ old('bio', $user->bio) }}</textarea>
                         <small class="contador" id="bioContador" aria-live="off">0 / 1000</small>
                     </div>
+                </div>
+
+                <div class="modal-pie">
+                    <button type="button" class="btn btn-claro" data-cerrar>Cancelar</button>
+                    <button type="submit" class="btn">
+                        <i data-lucide="check"></i> Guardar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    {{-- Modal cambiar correo --}}
+    <div class="modal" id="modalCorreo" role="dialog" aria-modal="true" aria-labelledby="correoTitulo">
+        <div class="modal-caja" tabindex="-1">
+            <div class="modal-cab">
+                <h2 id="correoTitulo">Cambiar correo</h2>
+                <button type="button" class="modal-x" data-cerrar aria-label="Cerrar">
+                    <i data-lucide="x"></i>
+                </button>
+            </div>
+
+            <form method="POST" action="{{ route('perfil.correo') }}" id="formCorreo" autocomplete="off">
+                @csrf
+                @method('PUT')
+
+                <div class="modal-cuerpo">
+                    @if ($errors->correo->any())
+                        <div class="errores" role="alert">
+                            @foreach ($errors->correo->all() as $error)
+                                <p>{{ $error }}</p>
+                            @endforeach
+                        </div>
+                    @endif
 
                     <div class="campo">
-                        <label for="fDireccion">Dirección de la barbería</label>
-                        <input type="text" id="fDireccion" name="location_address" value="{{ old('location_address', $user->location_address) }}" maxlength="255" autocomplete="street-address" enterkeyhint="next">
+                        <label for="fCorreoNuevo">Correo nuevo</label>
+                        <input type="email" id="fCorreoNuevo" name="email" value="{{ old('email') }}" maxlength="255" inputmode="email" autocomplete="email" autocapitalize="off" autocorrect="off" enterkeyhint="next" required>
+                        <small>Tu correo actual es {{ $user->email }}. Con el nuevo vas a entrar al panel.</small>
                     </div>
 
                     <div class="campo">
-                        <label for="fUrl">Enlace de Google Maps</label>
-                        <input type="url" id="fUrl" name="location_url" value="{{ old('location_url', $user->location_url) }}" maxlength="255" inputmode="url" autocapitalize="off" autocorrect="off" enterkeyhint="done" placeholder="https://maps.app.goo.gl/...">
-                        <small>En Google Maps toca Compartir y copia el enlace. Se usa para el "cómo llegar" en WhatsApp.</small>
+                        <label for="fCorreoClave">Tu contraseña actual</label>
+                        <input type="password" id="fCorreoClave" name="current_password" autocomplete="current-password" enterkeyhint="done" required>
+                        <small>La pedimos para confirmar que eres tú.</small>
                     </div>
                 </div>
 
                 <div class="modal-pie">
-                    <button type="button" class="btn btn-claro" id="perfilCancelar">Cancelar</button>
-                    <button type="submit" class="btn" id="perfilGuardar">
-                        <i data-lucide="check"></i> Guardar
+                    <button type="button" class="btn btn-claro" data-cerrar>Cancelar</button>
+                    <button type="submit" class="btn">
+                        <i data-lucide="check"></i> Guardar correo
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    {{-- Modal cambiar contraseña --}}
+    <div class="modal" id="modalClave" role="dialog" aria-modal="true" aria-labelledby="claveTitulo">
+        <div class="modal-caja" tabindex="-1">
+            <div class="modal-cab">
+                <h2 id="claveTitulo">Cambiar contraseña</h2>
+                <button type="button" class="modal-x" data-cerrar aria-label="Cerrar">
+                    <i data-lucide="x"></i>
+                </button>
+            </div>
+
+            <form method="POST" action="{{ route('perfil.clave') }}" id="formClave" autocomplete="off">
+                @csrf
+                @method('PUT')
+
+                <div class="modal-cuerpo">
+                    @if ($errors->clave->any())
+                        <div class="errores" role="alert">
+                            @foreach ($errors->clave->all() as $error)
+                                <p>{{ $error }}</p>
+                            @endforeach
+                        </div>
+                    @endif
+
+                    <div class="campo">
+                        <label for="fClaveActual">Contraseña actual</label>
+                        <input type="password" id="fClaveActual" name="current_password" autocomplete="current-password" enterkeyhint="next" required>
+                    </div>
+
+                    <div class="campo">
+                        <label for="fClaveNueva">Contraseña nueva</label>
+                        <input type="password" id="fClaveNueva" name="password" minlength="8" maxlength="72" autocomplete="new-password" enterkeyhint="next" required>
+                        <small>Mínimo 8 caracteres.</small>
+                    </div>
+
+                    <div class="campo">
+                        <label for="fClaveConfirma">Repite la contraseña nueva</label>
+                        <input type="password" id="fClaveConfirma" name="password_confirmation" minlength="8" maxlength="72" autocomplete="new-password" enterkeyhint="done" required>
+                    </div>
+                </div>
+
+                <div class="modal-pie">
+                    <button type="button" class="btn btn-claro" data-cerrar>Cancelar</button>
+                    <button type="submit" class="btn">
+                        <i data-lucide="check"></i> Guardar contraseña
                     </button>
                 </div>
             </form>
@@ -516,12 +619,81 @@
 <script>
     (function () {
         const MAX_BYTES = 2 * 1024 * 1024;
+        let activo = null; // el modal que está abierto
 
-        const modal = document.getElementById('modalPerfil');
-        const caja = modal.querySelector('.modal-caja');
-        const form = document.getElementById('formPerfil');
-        const btnEditar = document.getElementById('btnEditar');
-        const btnGuardar = document.getElementById('perfilGuardar');
+        // ---------- Manejo común de los modales ----------
+        function crearModal(modal, boton, alCancelar) {
+            const caja = modal.querySelector('.modal-caja');
+
+            const api = {
+                caja: caja,
+                abrir: function () {
+                    activo = api;
+                    modal.classList.add('abierto');
+                    document.documentElement.classList.add('sin-scroll');
+                    // Se enfoca la caja (no un campo) para no abrir el teclado de golpe en el celular
+                    caja.focus({ preventScroll: true });
+                },
+                cerrar: function () {
+                    modal.classList.remove('abierto');
+                    document.documentElement.classList.remove('sin-scroll');
+                    if (activo === api) activo = null;
+                    if (boton) boton.focus({ preventScroll: true });
+                },
+                cancelar: function () {
+                    if (alCancelar) alCancelar();
+                    api.cerrar();
+                },
+            };
+
+            if (boton) boton.addEventListener('click', api.abrir);
+            modal.querySelectorAll('[data-cerrar]').forEach(function (b) {
+                b.addEventListener('click', api.cancelar);
+            });
+            modal.addEventListener('click', function (e) { if (e.target === modal) api.cancelar(); });
+
+            return api;
+        }
+
+        document.addEventListener('keydown', function (e) {
+            if (!activo) return;
+
+            if (e.key === 'Escape') {
+                activo.cancelar();
+                return;
+            }
+
+            // Mantener el foco dentro del modal
+            if (e.key === 'Tab') {
+                const foco = activo.caja.querySelectorAll('button:not([disabled]), input:not([disabled]), textarea:not([disabled]), a[href]');
+                if (!foco.length) return;
+                const primero = foco[0];
+                const ultimo = foco[foco.length - 1];
+                if (e.shiftKey && (document.activeElement === primero || document.activeElement === activo.caja)) {
+                    e.preventDefault();
+                    ultimo.focus();
+                } else if (!e.shiftKey && document.activeElement === ultimo) {
+                    e.preventDefault();
+                    primero.focus();
+                }
+            }
+        });
+
+        function quitarErrores(form) {
+            form.querySelectorAll('.errores').forEach(function (el) { el.remove(); });
+        }
+
+        // Correo y contraseña: al cancelar se vacía todo (nunca se guarda nada escrito)
+        function vaciar(form) {
+            form.reset();
+            form.querySelectorAll('input').forEach(function (i) {
+                if (i.type !== 'hidden') i.value = '';
+            });
+            quitarErrores(form);
+        }
+
+        // ---------- Perfil ----------
+        const formPerfil = document.getElementById('formPerfil');
         const fFoto = document.getElementById('fFoto');
         const fQuitar = document.getElementById('fQuitar');
         const fBio = document.getElementById('fBio');
@@ -561,56 +733,18 @@
             bioContador.textContent = fBio.value.length + ' / ' + fBio.maxLength;
         }
 
-        function abrir() {
-            modal.classList.add('abierto');
-            document.documentElement.classList.add('sin-scroll');
-            // Se enfoca la caja (no un campo) para no abrir el teclado de golpe en el celular
-            caja.focus({ preventScroll: true });
-        }
-
-        function cerrar() {
-            modal.classList.remove('abierto');
-            document.documentElement.classList.remove('sin-scroll');
-            btnEditar.focus({ preventScroll: true });
-        }
-
-        function cancelar() {
-            form.reset();
-            liberarUrl();
-            errorFoto('');
-            mostrarPrevia(original || null);
-            actualizarContador();
-            cerrar();
-        }
-
-        btnEditar.addEventListener('click', abrir);
-        document.getElementById('perfilCerrar').addEventListener('click', cancelar);
-        document.getElementById('perfilCancelar').addEventListener('click', cancelar);
-        modal.addEventListener('click', function (e) { if (e.target === modal) cancelar(); });
-
-        document.addEventListener('keydown', function (e) {
-            if (!modal.classList.contains('abierto')) return;
-
-            if (e.key === 'Escape') {
-                cancelar();
-                return;
+        const perfil = crearModal(
+            document.getElementById('modalPerfil'),
+            document.getElementById('btnEditar'),
+            function () {
+                formPerfil.reset();
+                liberarUrl();
+                errorFoto('');
+                mostrarPrevia(original || null);
+                actualizarContador();
+                quitarErrores(formPerfil);
             }
-
-            // Mantener el foco dentro del modal
-            if (e.key === 'Tab') {
-                const foco = caja.querySelectorAll('button:not([disabled]), input:not([disabled]), textarea:not([disabled]), a[href]');
-                if (!foco.length) return;
-                const primero = foco[0];
-                const ultimo = foco[foco.length - 1];
-                if (e.shiftKey && (document.activeElement === primero || document.activeElement === caja)) {
-                    e.preventDefault();
-                    ultimo.focus();
-                } else if (!e.shiftKey && document.activeElement === ultimo) {
-                    e.preventDefault();
-                    primero.focus();
-                }
-            }
-        });
+        );
 
         fFoto.addEventListener('change', function () {
             const archivo = fFoto.files[0];
@@ -645,18 +779,41 @@
         fBio.addEventListener('input', actualizarContador);
         actualizarContador();
 
-        form.addEventListener('submit', function () {
-            btnGuardar.disabled = true;
+        // ---------- Correo y contraseña ----------
+        const formCorreo = document.getElementById('formCorreo');
+        const formClave = document.getElementById('formClave');
+
+        const correo = crearModal(
+            document.getElementById('modalCorreo'),
+            document.getElementById('btnCorreo'),
+            function () { vaciar(formCorreo); }
+        );
+
+        const clave = crearModal(
+            document.getElementById('modalClave'),
+            document.getElementById('btnClave'),
+            function () { vaciar(formClave); }
+        );
+
+        // ---------- Evitar doble envío ----------
+        [formPerfil, formCorreo, formClave].forEach(function (f) {
+            const btn = f.querySelector('button[type="submit"]');
+
+            f.addEventListener('submit', function () { btn.disabled = true; });
+
+            // Al volver con el botón "atrás" del celular el botón podría quedar bloqueado
+            window.addEventListener('pageshow', function (e) {
+                if (e.persisted) btn.disabled = false;
+            });
         });
 
-        // Al volver con el botón "atrás" del celular el botón podría quedar bloqueado
-        window.addEventListener('pageshow', function (e) {
-            if (e.persisted) btnGuardar.disabled = false;
-        });
-
-        // Si falló la validación, reabrir el modal con lo escrito
+        // ---------- Si falló la validación, reabrir el modal que corresponde ----------
         @if ($errors->any())
-            abrir();
+            perfil.abrir();
+        @elseif ($errors->correo->any())
+            correo.abrir();
+        @elseif ($errors->clave->any())
+            clave.abrir();
         @endif
     })();
 </script>

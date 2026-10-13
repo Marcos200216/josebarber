@@ -22,7 +22,7 @@ class MiCitaController extends Controller
 {
     private const SESION = 'mi_cita';
     private const MINUTOS_SESION = 15;
-    private const HORAS_MINIMAS = 2;      // anticipación mínima para cancelar o cambiar
+    private const HORAS_MINIMAS = 1;      // anticipación mínima para cancelar o cambiar
     private const MAX_INTENTOS = 5;       // fallos por teléfono
     private const BLOQUEO_SEGUNDOS = 900; // 15 minutos
 
@@ -456,7 +456,7 @@ class MiCitaController extends Controller
             case 'muy-tarde':
                 return $this->error(422, 'muy-tarde', $this->textoMuyTarde('cambiar'), ['citas' => $citas]);
             case 'muy-pronto':
-                return $this->error(422, 'muy-pronto', 'La nueva hora debe ser al menos ' . self::HORAS_MINIMAS . ' horas desde ahora.');
+                               return $this->error(422, 'muy-pronto', 'La nueva hora debe ser al menos ' . $this->textoHoras() . ' desde ahora.');
             case 'sin-cambio':
                 return $this->error(422, 'sin-cambio', 'Elegiste la misma hora que ya tienes. Escoge otra.');
             case 'hora-ocupada':
@@ -493,10 +493,16 @@ class MiCitaController extends Controller
             ->whereHas('horarios', fn($q) => $q->where('trabaja', true));
     }
 
-    private function textoMuyTarde(string $accion): string
+        private function textoMuyTarde(string $accion): string
     {
-        return 'Faltan menos de ' . self::HORAS_MINIMAS . ' horas para tu cita, por eso ya no se puede '
+        return 'Tu cita es en menos de ' . $this->textoHoras() . ', por eso ya no se puede '
             . $accion . ' desde aquí. Comunícate con el barbero.';
+    }
+
+    /** "1 hora" o "N horas", según la regla de anticipación. */
+    private function textoHoras(): string
+    {
+        return self::HORAS_MINIMAS === 1 ? '1 hora' : self::HORAS_MINIMAS . ' horas';
     }
 
     private function telefonoVerificado(Request $request): ?string
@@ -534,8 +540,6 @@ class MiCitaController extends Controller
             'barbero' => [
                 'id' => $barbero?->id,
                 'nombre' => $barbero?->name ?? 'Barbero',
-                'direccion' => $barbero?->location_address,
-                'mapa' => $this->urlSegura($barbero?->location_url),
             ],
             'fecha' => $c->inicio->format('Y-m-d'),
             'hora' => $c->inicio->format('H:i'),
@@ -571,15 +575,7 @@ class MiCitaController extends Controller
         return preg_match('/^[24-8]\d{7}$/', $d) ? '+506' . $d : null;
     }
 
-    private function urlSegura(?string $url): ?string
-    {
-        $url = trim((string) $url);
-        if ($url === '') {
-            return null;
-        }
-
-        return preg_match('#^https?://#i', $url) && filter_var($url, FILTER_VALIDATE_URL) ? $url : null;
-    }
+  
 
     private function sinSesion(): JsonResponse
     {

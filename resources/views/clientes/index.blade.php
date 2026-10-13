@@ -854,19 +854,28 @@
         .resumen-mini strong { display: block; font-size: .95rem; line-height: 1.25; }
         .resumen-mini span.sub { display: block; font-size: .85rem; color: var(--gris-4); }
 
-        .dias {
+               .semana-nav {
             display: flex;
-            gap: 8px;
-            margin: 0 -20px;
-            padding: 2px 20px 10px;
-            overflow-x: auto;
-            scroll-snap-type: x proximity;
-            scrollbar-width: thin;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .semana-nav strong { font-size: .95rem; text-align: center; }
+        .semana-nav .icono-btn { width: 40px; height: 40px; }
+        .icono-btn:disabled { opacity: .35; cursor: not-allowed; }
+        .icono-btn:disabled:hover { background: transparent; }
+
+        .dias {
+            display: grid;
+            grid-template-columns: repeat(7, minmax(0, 1fr));
+            gap: 6px;
+            padding: 2px 0 10px;
         }
 
         .dia {
-            flex: 0 0 auto;
-            min-width: 66px;
+                       min-width: 0;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -1204,9 +1213,7 @@
 
             <nav class="nav" aria-label="Principal">
                 <a href="#cortes" class="enlace">Cortes</a>
-                @if ($ubicacion['mostrar'])
-                    <a href="#donde" class="enlace">Dónde estamos</a>
-                @endif
+             
                 <a href="#mi-cita" class="enlace js-mi-cita">Ver mi cita</a>
                 <a href="{{ route('login') }}" class="btn btn-claro btn-sm">
                     <i data-lucide="scissors"></i> Soy barbero
@@ -1232,9 +1239,7 @@
         </div>
         <nav aria-label="Menú móvil">
             <a href="#cortes" class="enlace"><i data-lucide="scissors"></i> Cortes</a>
-            @if ($ubicacion['mostrar'])
-                <a href="#donde" class="enlace"><i data-lucide="map-pin"></i> Dónde estamos</a>
-            @endif
+          
             <a href="#mi-cita" class="enlace js-mi-cita"><i data-lucide="calendar-check"></i> Ver mi cita</a>
             <a href="{{ route('login') }}" class="btn btn-claro"><i data-lucide="scissors"></i> Soy barbero</a>
         </nav>
@@ -1337,35 +1342,7 @@
             </div>
         </section>
 
-        {{-- ===== Dónde estamos ===== --}}
-        @if ($ubicacion['mostrar'])
-            <section class="seccion ubicacion" id="donde">
-                <div class="contenedor">
-                    <div class="seccion-cab" data-reveal>
-                        <h2>Dónde estamos</h2>
-                    </div>
-                    <div class="ubicacion-caja" data-reveal style="--d:120ms">
-                        @if ($ubicacion['direccion'])
-                            <div class="dato">
-                                <i data-lucide="map-pin"></i>
-                                <div><strong>Dirección</strong><span>{{ $ubicacion['direccion'] }}</span></div>
-                            </div>
-                        @endif
-                        @if ($ubicacion['horario'])
-                            <div class="dato">
-                                <i data-lucide="clock"></i>
-                                <div><strong>Horario</strong><span>{{ $ubicacion['horario'] }}</span></div>
-                            </div>
-                        @endif
-                        @if ($ubicacion['mapa'])
-                            <a href="{{ $ubicacion['mapa'] }}" class="btn" target="_blank" rel="noopener noreferrer">
-                                <i data-lucide="navigation"></i> Cómo llegar
-                            </a>
-                        @endif
-                    </div>
-                </div>
-            </section>
-        @endif
+
     </main>
 
     {{-- ===== Footer ===== --}}
@@ -1684,10 +1661,61 @@
             function pintar(html, pie, acc) {
                 acciones = acc || {};
                 cuerpo.innerHTML = html;
-                cuerpo.scrollTop = 0;
+                                cuerpo.scrollTop = 0;
+                activarCalendario();
                 if (pie) { pieEl.innerHTML = pie; pieEl.hidden = false; }
                 else { pieEl.innerHTML = ''; pieEl.hidden = true; }
                 if (window.lucide) lucide.createIcons();
+            }
+
+                     // ----- Calendario por semanas (7 días a la vez, con flechas) -----
+            function calendarioHtml(dias, selDia) {
+                const botones = dias.map(function (x, i) {
+                    return '<button type="button" class="dia' + (i === selDia ? ' sel' : '') + '" data-a="dia" data-i="' + i + '"' +
+                        (x.disponible ? '' : ' disabled') + ' aria-pressed="' + (i === selDia) + '"' +
+                        ' aria-label="' + esc(x.etiqueta) + (x.disponible ? '' : ', sin espacios') + '">' +
+                        '<span class="dia-sem">' + esc(x.semana) + '</span>' +
+                        '<span class="dia-num">' + esc(x.numero) + '</span>' +
+                        '<span class="dia-mes">' + esc(x.mes) + '</span></button>';
+                }).join('');
+
+                return '<div class="semana-nav">' +
+                    '<button type="button" class="icono-btn" id="semAnt" aria-label="Semana anterior"><i data-lucide="chevron-left"></i></button>' +
+                    '<strong id="semTitulo" aria-live="polite"></strong>' +
+                    '<button type="button" class="icono-btn" id="semSig" aria-label="Semana siguiente"><i data-lucide="chevron-right"></i></button>' +
+                    '</div><div class="dias" id="dias">' + botones + '</div>';
+            }
+
+            function activarCalendario() {
+                const caja = cuerpo.querySelector('#dias');
+                const ant = document.getElementById('semAnt');
+                const sig = document.getElementById('semSig');
+                const titulo = document.getElementById('semTitulo');
+                if (!caja || !ant || !sig || !titulo) return;
+
+                const POR_PAGINA = 7;
+                const botones = Array.prototype.slice.call(caja.querySelectorAll('.dia'));
+                const paginas = Math.ceil(botones.length / POR_PAGINA);
+                const sel = botones.findIndex(function (b) { return b.classList.contains('sel'); });
+                let pagina = sel > 0 ? Math.floor(sel / POR_PAGINA) : 0;
+
+                function texto(b) {
+                    return b.querySelector('.dia-num').textContent + ' ' + b.querySelector('.dia-mes').textContent;
+                }
+
+                function mostrar() {
+                    const ini = pagina * POR_PAGINA;
+                    const fin = Math.min(ini + POR_PAGINA, botones.length) - 1;
+                    botones.forEach(function (b, i) { b.hidden = i < ini || i > fin; });
+                    titulo.textContent = texto(botones[ini]) + ' – ' + texto(botones[fin]);
+                    ant.disabled = pagina === 0;
+                    sig.disabled = pagina >= paginas - 1;
+                }
+
+                ant.parentNode.hidden = paginas <= 1;
+                ant.addEventListener('click', function () { if (pagina > 0) { pagina--; mostrar(); } });
+                sig.addEventListener('click', function () { if (pagina < paginas - 1) { pagina++; mostrar(); } });
+                mostrar();
             }
 
             function ir(vista) { pila.push(vista); vista(); }
@@ -1889,17 +1917,13 @@
             }
 
             // --- Elegir barbero ---
-            function cardBarbero(b, i) {
-                const prox = b.proximo
-                    ? '<span class="prox"><i data-lucide="clock"></i> ' + esc(b.proximo.texto) + '</span>'
-                    : '<span class="prox nada">Sin espacios por ahora</span>';
+                      function cardBarbero(b, i) {
                 return '<button type="button" class="opcion-card" data-a="barbero" data-i="' + i + '">' +
                     avatar(b) +
                     '<span class="cuerpo"><span class="nombre">' + esc(b.nombre) + '</span>' +
                     (b.descripcion ? '<span class="desc">' + esc(b.descripcion) + '</span>' : '') +
-                    prox + '</span><i data-lucide="chevron-right" class="chev"></i></button>';
+                    '</span><i data-lucide="chevron-right" class="chev"></i></button>';
             }
-
             function vistaBarberos() {
                 const t = ++token;
                 cabecera('Elige tu barbero', estado.corte.nombre + ' · ' + estado.corte.precio);
@@ -1965,12 +1989,6 @@
                         }).join('') + '</div></div>';
                 }
 
-                if (b.direccion || b.mapa) {
-                    html += '<div class="bloque"><h4>Dónde atiende</h4><div class="ubic">' +
-                        (b.direccion ? '<div class="linea"><i data-lucide="map-pin"></i><span>' + esc(b.direccion) + '</span></div>' : '') +
-                        (b.mapa ? '<a class="btn btn-claro btn-sm" href="' + esc(b.mapa) + '" target="_blank" rel="noopener noreferrer"><i data-lucide="navigation"></i> Cómo llegar</a>' : '') +
-                        '</div></div>';
-                }
 
                 if (!b.proximo) {
                     html += '<p class="nota">Este barbero no tiene espacios en los próximos días. Prueba con otro.</p>';
@@ -2025,16 +2043,7 @@
                         '<div class="cuerpo"><strong>' + esc(estado.corte.nombre) + ' · ' + esc(estado.corte.precio) + '</strong>' +
                         '<span class="sub">con ' + esc(b.nombre) + ' · ' + esc(estado.corte.duracion) + ' min</span></div></div>';
 
-                    const diasHtml = dias.map(function (x, i) {
-                        return '<button type="button" class="dia' + (i === selDia ? ' sel' : '') + '" data-a="dia" data-i="' + i + '"' +
-                            (x.disponible ? '' : ' disabled') + ' aria-pressed="' + (i === selDia) + '"' +
-                            ' aria-label="' + esc(x.etiqueta) + (x.disponible ? '' : ', sin espacios') + '">' +
-                            '<span class="dia-sem">' + esc(x.semana) + '</span>' +
-                            '<span class="dia-num">' + esc(x.numero) + '</span>' +
-                            '<span class="dia-mes">' + esc(x.mes) + '</span></button>';
-                    }).join('');
-
-                    const html = resumen + '<div class="dias" id="dias">' + diasHtml + '</div>' +
+                                    const html = resumen + calendarioHtml(dias, selDia) +
                         '<div class="horas-cab"><strong>Horas disponibles</strong><span id="horasDia"></span></div>' +
                         '<div class="horas" id="horas"></div>';
 
@@ -2421,13 +2430,9 @@
                         filaResumen('user', 'Barbero', c.barbero.nombre) +
                         filaResumen('calendar-days', 'Cuándo', c.cuando) +
                         filaResumen('phone', 'Tu teléfono', c.cliente.telefono) +
-                        (c.barbero.direccion ? filaResumen('map-pin', 'Dónde', c.barbero.direccion) : '') +
+                   
                     '</div>' +
-                    '<div class="exito-acciones">' +
-                        (c.barbero.mapa
-                            ? '<a class="btn btn-claro" href="' + esc(c.barbero.mapa) + '" target="_blank" rel="noopener noreferrer"><i data-lucide="navigation"></i> Cómo llegar</a>'
-                            : '') +
-                    '</div>' +
+                 
                     '<p class="nota">También puedes tomar una captura de pantalla para no olvidarlo.</p>';
                 const pie = '<button type="button" class="btn" data-a="listo">Listo</button>';
 
@@ -2703,25 +2708,21 @@
                 const filas =
                     filaResumen('calendar-days', 'Cuándo', c.cuando) +
                     filaResumen('user', 'Barbero', c.barbero.nombre) +
-                    filaResumen('clock', 'Duración', c.corte.duracion + ' min') +
-                    (c.barbero.direccion ? filaResumen('map-pin', 'Dónde', c.barbero.direccion) : '');
+                                       filaResumen('clock', 'Duración', c.corte.duracion + ' min');
 
                 const acciones = c.puede_modificar
                     ? '<div class="cita-botones">' +
                         '<button type="button" class="btn btn-claro" data-a="cambiar" data-i="' + i + '"><i data-lucide="calendar-clock"></i> Cambiar</button>' +
                         '<button type="button" class="btn btn-cancelar" data-a="cancelar" data-i="' + i + '"><i data-lucide="x"></i> Cancelar</button>' +
                       '</div>'
-                    : '<p class="aviso-tarde"><i data-lucide="clock"></i><span>Faltan menos de 2 horas para tu cita. Para hacer cambios, comunícate con el barbero.</span></p>';
+                    : '<p class="aviso-tarde"><i data-lucide="clock"></i><span>Tu cita es en menos de 1 hora. Para hacer cambios, comunícate con el barbero.</span></p>';
 
-                const mapa = c.barbero.mapa
-                    ? '<a class="btn btn-claro btn-sm mapa" href="' + esc(c.barbero.mapa) + '" target="_blank" rel="noopener noreferrer"><i data-lucide="navigation"></i> Cómo llegar</a>'
-                    : '';
-
+              
                 return '<article class="cita-card">' +
                     '<div class="cita-cab"><h3>' + esc(c.corte.nombre) + '</h3>' +
                     (c.corte.precio ? '<span class="cita-precio">' + esc(c.corte.precio) + '</span>' : '') + '</div>' +
                     '<div class="resumen-lista">' + filas + '</div>' +
-                    acciones + mapa +
+                    acciones + 
                     '</article>';
             }
 
@@ -2912,19 +2913,9 @@
                         '<div class="cuerpo"><strong>Tu cita actual: ' + esc(c.cuando) + '</strong>' +
                         '<span class="sub">' + esc(c.corte.nombre) + ' · ' + esc(c.corte.duracion) + ' min · con ' + esc(bd.nombre) + '</span></div></div>';
 
-                    const diasHtml = dias.map(function (x, i) {
-                        return '<button type="button" class="dia' + (i === selDia ? ' sel' : '') + '" data-a="dia" data-i="' + i + '"' +
-                            (x.disponible ? '' : ' disabled') + ' aria-pressed="' + (i === selDia) + '"' +
-                            ' aria-label="' + esc(x.etiqueta) + (x.disponible ? '' : ', sin espacios') + '">' +
-                            '<span class="dia-sem">' + esc(x.semana) + '</span>' +
-                            '<span class="dia-num">' + esc(x.numero) + '</span>' +
-                            '<span class="dia-mes">' + esc(x.mes) + '</span></button>';
-                    }).join('');
-
-                    const html = resumen + '<div class="dias" id="dias">' + diasHtml + '</div>' +
+                                    const html = resumen + calendarioHtml(dias, selDia) +
                         '<div class="horas-cab"><strong>Horas disponibles</strong><span id="horasDia"></span></div>' +
                         '<div class="horas" id="horas"></div>';
-
                     const pie = '<div class="pie-info" id="pieInfo"></div>' +
                         '<button type="button" class="btn" id="pieBtn" data-a="confirmar" disabled>Confirmar cambio <i data-lucide="check"></i></button>';
 

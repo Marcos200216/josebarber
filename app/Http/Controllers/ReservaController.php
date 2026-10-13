@@ -261,10 +261,8 @@ class ReservaController extends Controller
                     'precio' => '₡' . number_format($corte->precio, 0, ',', ' '),
                     'duracion' => (int) $corte->duracion_minutos,
                 ],
-                'barbero' => [
+                                'barbero' => [
                     'nombre' => $barbero->name,
-                    'direccion' => $barbero->location_address,
-                    'mapa' => $this->urlSegura($barbero->location_url),
                 ],
                 'cuando' => $this->presentarMomento($inicio)['texto'],
                 'fecha' => $inicio->format('Y-m-d'),
@@ -298,9 +296,7 @@ class ReservaController extends Controller
             'galeria' => $b->galeria->sortByDesc('id')->take(6)->map(fn ($f) => [
                 'url' => asset('storage/' . $f->imagen_path),
                 'descripcion' => $f->descripcion,
-            ])->values()->all(),
-            'direccion' => $b->location_address,
-            'mapa' => $this->urlSegura($b->location_url),
+                       ])->values()->all(),
         ];
     }
 
@@ -323,13 +319,6 @@ class ReservaController extends Controller
         }
 
         return ucfirst($fecha->copy()->locale('es')->translatedFormat('D j M'));
-    }
-
-    private function urlSegura(?string $url): ?string
-    {
-        $url = trim((string) $url);
-
-        return preg_match('#^https?://#i', $url) ? $url : null;
     }
 
     /** Cuántas citas pendientes (que aún no terminan) tiene ese teléfono. */
