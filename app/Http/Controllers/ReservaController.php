@@ -14,7 +14,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
-use App\Services\WhatsAppService;
+use App\Services\NotificacionService;
 
 class ReservaController extends Controller
 {
@@ -23,7 +23,7 @@ class ReservaController extends Controller
 
        public function __construct(
         private DisponibilidadService $disponibilidad,
-        private WhatsAppService $whatsapp,
+        private NotificacionService $notificaciones,
     ) {
     }
 
@@ -150,6 +150,7 @@ class ReservaController extends Controller
             'hora' => ['required', 'date_format:H:i'],
             'nombre' => ['required', 'string', 'min:2', 'max:80'],
             'telefono' => ['required', 'string', 'max:30'],
+               'email' => ['required', 'string', 'email', 'max:120'],
         ], [
             'corte.required' => 'Elige un corte.',
             'corte.integer' => 'Elige un corte.',
@@ -164,6 +165,9 @@ class ReservaController extends Controller
             'nombre.max' => 'Tu nombre es muy largo (máximo 80 letras).',
             'telefono.required' => 'Escribe tu teléfono.',
             'telefono.max' => 'Ese teléfono no parece válido.',
+               'email.required' => 'Escribe tu correo.',
+   'email.email' => 'Escribe un correo válido, por ejemplo nombre@gmail.com.',
+   'email.max' => 'Ese correo es muy largo.',
         ]);
 
         if ($v->fails()) {
@@ -186,6 +190,7 @@ class ReservaController extends Controller
         if ($telefono === null) {
             return $this->validacion('telefono', 'Escribe un teléfono de Costa Rica de 8 dígitos, por ejemplo 7084 2740.');
         }
+           $email = mb_strtolower(trim((string) $request->input('email')));
 
         // ----- Revalidación en el servidor -----
         $corte = Corte::activos()->find($request->integer('corte'));
@@ -208,7 +213,7 @@ class ReservaController extends Controller
         $pinHash = Hash::make($pin);
 
         try {
-            $resultado = DB::transaction(function () use ($barbero, $corte, $inicio, $fin, $hora, $nombre, $telefono, $pinHash) {
+            $resultado =    DB::transaction(function () use ($barbero, $corte, $inicio, $fin, $hora, $nombre, $telefono, $email, $pinHash) {
                 // Bloquea al barbero: dos clientes a la vez se atienden uno detrás del otro.
                 User::whereKey($barbero->id)->lockForUpdate()->first();
 
@@ -229,6 +234,7 @@ class ReservaController extends Controller
                     'corte_id' => $corte->id,
                     'cliente_nombre' => $nombre,
                     'cliente_telefono' => $telefono,
+                       'cliente_email' => $email,
                     'inicio' => $inicio,
                     'fin' => $fin,
                     'estado' => 'pendiente',
@@ -249,7 +255,7 @@ class ReservaController extends Controller
 
                $cita = $resultado['cita'];
         $cita->load(['corte', 'barbero']);
-        $this->whatsapp->citaNueva($cita, $pin);
+        $this->notificaciones->citaNueva($cita, $pin);
 
         return response()->json([
             'ok' => true,

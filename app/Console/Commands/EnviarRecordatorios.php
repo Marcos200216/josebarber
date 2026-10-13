@@ -3,7 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Models\Cita;
-use App\Services\WhatsAppService;
+use App\Services\NotificacionService;
 use Illuminate\Console\Command;
 
 class EnviarRecordatorios extends Command
@@ -18,7 +18,7 @@ class EnviarRecordatorios extends Command
         '2h' => [1, 2],
     ];
 
-    public function handle(WhatsAppService $whatsapp): int
+    public function handle(NotificacionService $notificaciones): int
     {
         $simular = (bool) $this->option('simular');
         $total = 0;
@@ -46,7 +46,7 @@ class EnviarRecordatorios extends Command
                     continue;
                 }
 
-                $whatsapp->recordatorio($cita, $aviso);
+              $notificaciones->recordatorio($cita, $aviso);
                 $total++;
             }
         }

@@ -16,7 +16,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Validator;
-use App\Services\WhatsAppService;
+use App\Services\NotificacionService;
 
 class MiCitaController extends Controller
 {
@@ -28,7 +28,7 @@ class MiCitaController extends Controller
 
     public function __construct(
         private DisponibilidadService $disponibilidad,
-        private WhatsAppService $whatsapp,
+        private NotificacionService $notificaciones,
     ) {}
 
     /** Teléfono + PIN → abre una verificación corta y devuelve las citas. */
@@ -145,17 +145,18 @@ class MiCitaController extends Controller
         $pin = str_pad((string) random_int(0, 9999), 4, '0', STR_PAD_LEFT);
         $hash = Hash::make($pin); // se calcula siempre, para gastar el mismo tiempo
 
-        $citas = $this->pendientesDe($telefono)->get();
+                $citas = $this->pendientesDe($telefono)->get();
+        $email = $citas->first(fn (Cita $c) => filled($c->cliente_email))?->cliente_email;
 
-        if ($citas->isNotEmpty()) {
+        if ($citas->isNotEmpty() && $this->notificaciones->puedeEnviarCodigo($email)) {
             Cita::whereIn('id', $citas->pluck('id'))->update(['pin_hash' => $hash]);
 
-            $this->whatsapp->codigoNuevo($telefono, $citas->first()->cliente_nombre, $pin, $citas->first()->id);
+            $this->notificaciones->codigoNuevo($telefono, $email, $citas->first()->cliente_nombre, $pin, $citas->first()->id);
         }
 
         return $this->json([
             'ok' => true,
-            'mensaje' => 'Si ese teléfono tiene citas pendientes, te enviamos un código nuevo por WhatsApp.',
+            'mensaje' => 'Si ese teléfono tiene citas pendientes, te enviamos un código nuevo a tu correo. Si no lo ves, revisa la carpeta de spam.',
         ]);
     }
 
@@ -225,7 +226,7 @@ class MiCitaController extends Controller
             $canceladaModelo = Cita::with(['corte', 'barbero'])->find($cita);
 
             if ($canceladaModelo) {
-                $this->whatsapp->citaCancelada($canceladaModelo);
+                $this->notificaciones->citaCancelada($canceladaModelo);
             }
         }
 
@@ -444,7 +445,7 @@ class MiCitaController extends Controller
             $nueva = Cita::with(['corte', 'barbero'])->find($cita);
 
             if ($nueva) {
-                $this->whatsapp->citaCambiada($nueva, $anterior['barbero_id'], $anterior['inicio']);
+               $this->notificaciones->citaCambiada($nueva, $anterior['barbero_id'], $anterior['inicio']);
             }
         }
 
