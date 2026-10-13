@@ -3,7 +3,7 @@
 namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
-
+use Illuminate\Support\Facades\File;
 class AppServiceProvider extends ServiceProvider
 {
     /**
@@ -19,6 +19,12 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        try {
+    if (! file_exists(public_path('storage'))) {
+        File::link(storage_path('app/public'), public_path('storage'));
+    }
+} catch (\Throwable $e) {
+    // si falla, no rompe el sitio
+}
     }
 }
